@@ -19,6 +19,10 @@ const nextConfig = {
           protocol: 'https',
           hostname: 'images.pixabay.com',
         },
+        {
+          protocol: 'https',
+          hostname: 'th.bing.com',
+        },
       ],
       // Optimisation pour l'Italie : cache agressif des images
       minimumCacheTTL: 60,

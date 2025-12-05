@@ -76,7 +76,17 @@ CREATE TABLE IF NOT EXISTS product_reviews (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. Table des messages chat
+-- 5. Table des paniers utilisateurs (synchronisation entre appareils)
+CREATE TABLE IF NOT EXISTS user_carts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id TEXT NOT NULL, -- Peut être UUID ou email
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+-- 6. Table des messages chat
 CREATE TABLE IF NOT EXISTS chat_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   sender TEXT NOT NULL CHECK (sender IN ('user', 'agent')),
@@ -88,7 +98,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. Table des notifications admin
+-- 7. Table des notifications admin
 CREATE TABLE IF NOT EXISTS admin_notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   type TEXT NOT NULL CHECK (type IN ('order', 'message')),
@@ -107,6 +117,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_product_reviews_product_id ON product_reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_reviews_status ON product_reviews(status);
+CREATE INDEX IF NOT EXISTS idx_user_carts_user_id ON user_carts(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_read ON admin_notifications(read);
@@ -120,17 +131,25 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Triggers pour updated_at
+-- Triggers pour updated_at (DROP IF EXISTS pour éviter les erreurs si déjà créés)
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
 CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_product_reviews_updated_at ON product_reviews;
 CREATE TRIGGER update_product_reviews_updated_at BEFORE UPDATE ON product_reviews
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_user_carts_updated_at ON user_carts;
+CREATE TRIGGER update_user_carts_updated_at BEFORE UPDATE ON user_carts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Politiques RLS (Row Level Security) - À configurer selon vos besoins
@@ -139,6 +158,7 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE product_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_carts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_notifications ENABLE ROW LEVEL SECURITY;
 
@@ -216,6 +236,19 @@ CREATE POLICY "Users can create reviews" ON product_reviews
 
 DROP POLICY IF EXISTS "Users can update reviews" ON product_reviews;
 CREATE POLICY "Users can update reviews" ON product_reviews
+    FOR UPDATE USING (true);
+
+-- User carts : lecture/écriture pour l'utilisateur propriétaire
+DROP POLICY IF EXISTS "Users can view own cart" ON user_carts;
+CREATE POLICY "Users can view own cart" ON user_carts
+    FOR SELECT USING (true); -- Temporairement ouvert pour faciliter
+
+DROP POLICY IF EXISTS "Users can create cart" ON user_carts;
+CREATE POLICY "Users can create cart" ON user_carts
+    FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Users can update own cart" ON user_carts;
+CREATE POLICY "Users can update own cart" ON user_carts
     FOR UPDATE USING (true);
 
 -- Admin notifications : lecture pour tous (vous pouvez restreindre aux admins)
