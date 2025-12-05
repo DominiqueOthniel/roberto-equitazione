@@ -126,3 +126,4 @@ export function useSupabaseQueryDebounced(queryFn, dependencies = [], delay = 30
   return { data, loading, error };
 }
 
+

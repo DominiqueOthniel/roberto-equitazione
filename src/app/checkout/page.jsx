@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCart } from '@/utils/cart';
-import { registerCustomer, updateCustomerOrderStats } from '@/utils/customers';
+import { getCart } from '@/utils/cart-supabase';
+import { registerCustomer, updateCustomerOrderStats } from '@/utils/customers-supabase';
+import { createOrder } from '@/utils/orders-supabase';
 import { createNotification } from '@/utils/notifications';
 
 export default function CheckoutPage() {
@@ -29,13 +30,21 @@ export default function CheckoutPage() {
     if (typeof window === 'undefined') return;
 
     // Charger le panier
-    const cart = getCart();
-    if (cart.length === 0) {
-      // Rediriger si le panier est vide
-      router.push('/shopping-cart');
-      return;
-    }
-    setOrderItems(cart);
+    const loadCart = async () => {
+      try {
+        const cart = await getCart();
+        if (cart.length === 0) {
+          // Rediriger si le panier est vide
+          router.push('/shopping-cart');
+          return;
+        }
+        setOrderItems(cart);
+      } catch (error) {
+        console.error('Erreur lors du chargement du panier:', error);
+      }
+    };
+
+    loadCart();
 
     // Charger les données utilisateur si connecté
     const userData = localStorage.getItem('user');
@@ -149,19 +158,23 @@ export default function CheckoutPage() {
     };
     
     try {
+      // Créer l'ordre dans Supabase
+      const createdOrder = await createOrder({
+        order_id: orderId,
+        customer_name: `${formData.nome} ${formData.cognome}`,
+        customer_email: formData.email,
+        customer_phone: formData.telefono,
+        shipping_address: formData,
+        items: orderItems,
+        subtotal: orderSubtotal,
+        total: orderTotal,
+        status: 'pending',
+      });
+
       // Salvare in currentOrder (per compatibilità)
-      localStorage.setItem('currentOrder', JSON.stringify(orderData));
-      
-      // Salvare in orders (per l'admin)
-      const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-      existingOrders.unshift(orderData);
-      localStorage.setItem('orders', JSON.stringify(existingOrders));
-      
-      // Déclencher un événement pour notifier les composants du nouvel ordre
-      window.dispatchEvent(new CustomEvent('newOrder', {
-        detail: { order: orderData }
-      }));
-      window.dispatchEvent(new Event('storage'));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('currentOrder', JSON.stringify(orderData));
+      }
       
       // Creare una notifica per l'admin
       createNotification(
@@ -174,7 +187,7 @@ export default function CheckoutPage() {
       // Registrare o aggiornare il cliente nell'admin
       if (formData.email) {
         // Registrare il cliente se non esiste già
-        registerCustomer({
+        await registerCustomer({
           name: `${formData.nome} ${formData.cognome}`,
           email: formData.email,
           phone: formData.telefono,
@@ -189,15 +202,13 @@ export default function CheckoutPage() {
         });
         
         // Aggiornare le statistiche dell'ordine
-        updateCustomerOrderStats(formData.email, orderTotal);
+        await updateCustomerOrderStats(formData.email, orderTotal);
       }
       
       // Clear cart after successful order
-      localStorage.removeItem('cart');
-      // Trigger cart update event
-      window.dispatchEvent(new CustomEvent('cartUpdated', {
-        detail: { count: 0 }
-      }));
+      const { saveCart } = await import('@/utils/cart-supabase');
+      await saveCart([]);
+      
       // Redirect to user dashboard after successful order
       alert('Ordine inviato con successo!');
       router.push('/user-dashboard');

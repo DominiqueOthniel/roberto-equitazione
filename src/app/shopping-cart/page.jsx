@@ -3,21 +3,39 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getCart, updateCartItemQuantity, removeFromCart } from '@/utils/cart';
+import { getCart, updateCartItemQuantity, removeFromCart, subscribeToCartChanges } from '@/utils/cart-supabase';
 
 export default function ShoppingCartPage() {
   const [cartItems, setCartItems] = useState([]);
+  const [mounted, setMounted] = useState(false);
 
-  // Load cart from localStorage on mount
+  // Load cart from Supabase on mount
   useEffect(() => {
-    const loadCart = () => {
-      const cart = getCart();
-      setCartItems(cart);
+    setMounted(true);
+    
+    if (typeof window === 'undefined') return;
+
+    const loadCart = async () => {
+      try {
+        const cart = await getCart();
+        setCartItems(cart);
+      } catch (error) {
+        console.error('Erreur lors du chargement du panier:', error);
+        setCartItems([]);
+      }
     };
 
     loadCart();
 
-    // Listen for cart updates from other components
+    // Subscribe to real-time cart changes
+    let subscription = null;
+    subscribeToCartChanges((items) => {
+      setCartItems(items);
+    }).then((channel) => {
+      subscription = channel;
+    });
+
+    // Listen for cart updates from other components (fallback)
     const handleCartUpdate = () => {
       loadCart();
     };
@@ -26,19 +44,22 @@ export default function ShoppingCartPage() {
     window.addEventListener('storage', handleCartUpdate);
 
     return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
       window.removeEventListener('cartUpdated', handleCartUpdate);
       window.removeEventListener('storage', handleCartUpdate);
     };
   }, []);
 
 
-  const updateQuantity = (index, delta) => {
-    const updatedCart = updateCartItemQuantity(index, delta);
+  const updateQuantity = async (index, delta) => {
+    const updatedCart = await updateCartItemQuantity(index, delta);
     setCartItems(updatedCart);
   };
 
-  const removeItem = (index) => {
-    const updatedCart = removeFromCart(index);
+  const removeItem = async (index) => {
+    const updatedCart = await removeFromCart(index);
     setCartItems(updatedCart);
   };
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCustomers } from '@/utils/customers';
+import { getCustomers } from '@/utils/customers-supabase';
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -11,24 +11,36 @@ export default function CustomerDetailPage() {
   const customerId = params?.id;
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || typeof window === 'undefined') return;
+    
     if (!customerId) {
       router.push('/admin/customers');
       return;
     }
 
-    const loadCustomer = () => {
-      const customers = getCustomers();
-      const foundCustomer = customers.find(c => c.id === parseInt(customerId) || c.id === customerId);
-      
-      if (foundCustomer) {
-        setCustomer(foundCustomer);
-      } else {
-        // Si pas trouvé, rediriger
-        router.push('/admin/customers');
+    const loadCustomer = async () => {
+      try {
+        const customers = await getCustomers();
+        const foundCustomer = customers.find(c => c.id === parseInt(customerId) || c.id === customerId);
+        
+        if (foundCustomer) {
+          setCustomer(foundCustomer);
+          setLoading(false);
+        } else {
+          // Si pas trouvé, rediriger
+          router.push('/admin/customers');
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement du client:', error);
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadCustomer();
@@ -45,7 +57,7 @@ export default function CustomerDetailPage() {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
-  }, [customerId, router]);
+  }, [customerId, router, mounted]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -60,7 +72,7 @@ export default function CustomerDetailPage() {
     }
   };
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -250,4 +262,5 @@ export default function CustomerDetailPage() {
     </div>
   );
 }
+
 

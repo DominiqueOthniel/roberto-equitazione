@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-import { addToCart } from '@/utils/cart';
+import { addToCart } from '@/utils/cart-supabase';
 
 export default function ProductCard({ product }) {
   const {
@@ -20,12 +20,12 @@ export default function ProductCard({ product }) {
     size
   } = product;
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     
     try {
-      addToCart({
+      await addToCart({
         id,
         name,
         brand,

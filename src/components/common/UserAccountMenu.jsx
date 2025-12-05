@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
-import { registerCustomer } from '@/utils/customers';
+import { registerCustomer } from '@/utils/customers-supabase';
 
 export default function UserAccountMenu() {
   const router = useRouter();
@@ -31,13 +31,9 @@ export default function UserAccountMenu() {
           isRegisteringRef.current = true;
           
           // Vérifier si le client existe déjà avant d'enregistrer
-          const storedCustomers = localStorage.getItem('customers');
-          const customers = storedCustomers ? JSON.parse(storedCustomers) : [];
-          const customerExists = customers.some(c => c.email === userData.email);
-          
-          if (!customerExists) {
-            registerCustomer(userData);
-          }
+          registerCustomer(userData).catch(error => {
+            console.error('Erreur lors de l\'enregistrement du client:', error);
+          });
           
           // Réinitialiser le flag après un court délai
           setTimeout(() => {

@@ -35,3 +35,4 @@ DROP POLICY IF EXISTS "Users can update own cart" ON user_carts;
 CREATE POLICY "Users can update own cart" ON user_carts
     FOR UPDATE USING (true);
 
+

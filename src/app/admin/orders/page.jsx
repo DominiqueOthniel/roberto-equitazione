@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
+import { getOrders, updateOrderStatus } from '@/utils/orders-supabase';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -41,83 +42,37 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     loadOrders();
-    // Ascoltare i nuovi ordini da checkout
-    const handleStorageChange = () => {
+    
+    // Écouter les mises à jour
+    const handleOrdersUpdated = () => {
       loadOrders();
     };
-    window.addEventListener('storage', handleStorageChange);
     
-    // Caricare l'ultima sincronizzazione
-    const lastSyncTime = localStorage.getItem('lastOrderSync');
-    if (lastSyncTime) {
-      setLastSync(new Date(lastSyncTime));
-    }
+    window.addEventListener('ordersUpdated', handleOrdersUpdated);
+    window.addEventListener('newOrder', handleOrdersUpdated);
     
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('ordersUpdated', handleOrdersUpdated);
+      window.removeEventListener('newOrder', handleOrdersUpdated);
+    };
   }, []);
 
-  const loadOrders = () => {
+  const loadOrders = async () => {
     if (typeof window === 'undefined') return;
     
     try {
-      // Charger depuis localStorage
-      const storedOrders = localStorage.getItem('orders');
-      let allOrders = storedOrders ? JSON.parse(storedOrders) : [];
+      // Charger depuis Supabase
+      const allOrders = await getOrders();
       
-      // Vérifier aussi currentOrder (commande récente depuis checkout) si elle n'a pas encore été ajoutée
-      const currentOrder = localStorage.getItem('currentOrder');
-      if (currentOrder) {
-        try {
-          const orderData = JSON.parse(currentOrder);
-          // Si la commande a déjà un ID, elle est probablement déjà dans orders
-          if (orderData.id) {
-            const exists = allOrders.some(o => o.id === orderData.id);
-            if (!exists) {
-              allOrders.unshift(orderData);
-              localStorage.setItem('orders', JSON.stringify(allOrders));
-            }
-          } else {
-            // Créer un objet commande depuis currentOrder (ancien format)
-            const newOrder = {
-              id: `ORD-${Date.now()}`,
-              date: new Date(orderData.orderDate || Date.now()),
-              customer: `${orderData.shippingAddress?.nome || ''} ${orderData.shippingAddress?.cognome || ''}`.trim(),
-              email: orderData.shippingAddress?.email || '',
-              phone: orderData.shippingAddress?.telefono || '',
-              shippingAddress: orderData.shippingAddress,
-              items: orderData.items || [],
-              subtotal: orderData.subtotal || 0,
-              vat: orderData.vat || 0,
-              shipping: orderData.shipping || 0,
-              total: orderData.total || 0,
-              status: 'pending',
-            };
-            
-            // Vérifier si la commande existe déjà
-            const exists = allOrders.some(o => 
-              o.customer === newOrder.customer && 
-              Math.abs(new Date(o.date).getTime() - newOrder.date.getTime()) < 60000
-            );
-            
-            if (!exists && newOrder.customer) {
-              allOrders.unshift(newOrder);
-              localStorage.setItem('orders', JSON.stringify(allOrders));
-            }
-          }
-        } catch (error) {
-          console.error('Errore durante il caricamento di currentOrder:', error);
-        }
-      }
-      
-      // Convertir les dates string en objets Date
-      allOrders = allOrders.map(order => ({
+      // Convertir les dates string en objets Date si nécessaire
+      const formattedOrders = allOrders.map(order => ({
         ...order,
-        date: order.date instanceof Date ? order.date : new Date(order.date || order.orderDate),
+        date: order.date instanceof Date ? order.date : new Date(order.created_at || order.date || order.orderDate),
       }));
       
-      setOrders(allOrders);
+      setOrders(formattedOrders);
     } catch (error) {
-      console.error('Errore durante il caricamento degli ordini:', error);
+      console.error('Erreur lors du chargement des commandes:', error);
       setOrders([]);
     }
   };
@@ -125,27 +80,25 @@ export default function AdminOrdersPage() {
   const handleSync = async () => {
     setIsSyncing(true);
     
-    // Simuler une synchronisation
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Recharger les commandes
-    loadOrders();
+    // Recharger les commandes depuis Supabase
+    await loadOrders();
     
     // Mettre à jour la dernière synchronisation
     const now = new Date();
     setLastSync(now);
-    localStorage.setItem('lastOrderSync', now.toISOString());
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lastOrderSync', now.toISOString());
+    }
     
     setIsSyncing(false);
   };
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    const updatedOrders = orders.map((order) =>
-      order.id === orderId ? { ...order, status: newStatus } : order
-    );
-    setOrders(updatedOrders);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('orders', JSON.stringify(updatedOrders));
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      await loadOrders(); // Recharger depuis Supabase
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du statut:', error);
     }
   };
 
@@ -407,7 +360,7 @@ export default function AdminOrdersPage() {
                         <div className="flex items-center justify-end gap-2">
                           <select
                             value={order.status}
-                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                            onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
                             className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                           >
                             <option value="pending">In attesa</option>

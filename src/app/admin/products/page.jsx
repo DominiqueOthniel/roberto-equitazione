@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
+import { getProducts, deleteProduct, updateProduct } from '@/utils/products-supabase';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState([]);
@@ -12,67 +13,52 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     loadProducts();
+    
+    // Écouter les mises à jour
+    const handleProductsUpdated = () => {
+      loadProducts();
+    };
+    
+    window.addEventListener('productsUpdated', handleProductsUpdated);
+    
+    return () => {
+      window.removeEventListener('productsUpdated', handleProductsUpdated);
+    };
   }, []);
 
-  const loadProducts = () => {
-    const storedProducts = localStorage.getItem('products');
-    if (storedProducts) {
-      setProducts(JSON.parse(storedProducts));
-    } else {
-      // Caricare dai dati di esempio del catalogo
-      const catalogProducts = [
-        {
-          id: 1,
-          name: 'Sella Salto Leggera',
-          brand: 'KIEFFER',
-          image: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&h=400&fit=crop',
-          price: 2100,
-          originalPrice: 2500,
-          rating: 3.5,
-          reviews: 29,
-          isNew: true,
-          type: 'Salto Ostacoli',
-          size: '16.5',
-          material: 'Pelle',
-          stock: 10,
-          status: 'active',
-        },
-        {
-          id: 2,
-          name: 'Sella Uso Generale Premium',
-          brand: 'PRESTIGE',
-          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop',
-          price: 3000,
-          originalPrice: 3500,
-          rating: 5,
-          reviews: 45,
-          isNew: false,
-          type: 'Uso Generale',
-          size: '17.5',
-          material: 'Pelle',
-          stock: 5,
-          status: 'active',
-        },
-      ];
-      setProducts(catalogProducts);
-      localStorage.setItem('products', JSON.stringify(catalogProducts));
+  const loadProducts = async () => {
+    try {
+      const productsData = await getProducts();
+      setProducts(productsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des produits:', error);
+      setProducts([]);
     }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Sei sicuro di voler eliminare questo prodotto?')) {
-      const updatedProducts = products.filter((p) => p.id !== id);
-      setProducts(updatedProducts);
-      localStorage.setItem('products', JSON.stringify(updatedProducts));
+      try {
+        await deleteProduct(id);
+        await loadProducts();
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+      }
     }
   };
 
-  const toggleStatus = (id) => {
-    const updatedProducts = products.map((p) =>
-      p.id === id ? { ...p, status: p.status === 'active' ? 'inactive' : 'active' } : p
-    );
-    setProducts(updatedProducts);
-    localStorage.setItem('products', JSON.stringify(updatedProducts));
+  const toggleStatus = async (id) => {
+    try {
+      const product = products.find(p => p.id === id);
+      if (product) {
+        await updateProduct(id, {
+          status: product.status === 'active' ? 'inactive' : 'active'
+        });
+        await loadProducts();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du statut:', error);
+    }
   };
 
   const filteredProducts = products.filter((product) => {

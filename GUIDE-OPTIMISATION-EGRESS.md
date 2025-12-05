@@ -259,3 +259,4 @@ SELECT * FROM storage.buckets WHERE name = 'product-images';
 
 **Résultat attendu : Egress proche de 0GB/mois** 🎉
 
+

@@ -2,20 +2,26 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { getCustomers } from '@/utils/customers';
+import { getCustomers } from '@/utils/customers-supabase';
 
 export default function CustomersPage() {
   const [customersData, setCustomersData] = useState([]);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Charger les clients depuis localStorage
-    const loadCustomers = () => {
-      const customers = getCustomers();
-      if (customers.length > 0) {
-        setCustomersData(customers);
-      } else {
-        // Dati di esempio se nessun cliente esiste - créer 5 clients
-        const exampleCustomers = [
+    setMounted(true);
+    
+    if (typeof window === 'undefined') return;
+
+    // Charger les clients depuis Supabase
+    const loadCustomers = async () => {
+      try {
+        const customers = await getCustomers();
+        if (customers.length > 0) {
+          setCustomersData(customers);
+        } else {
+          // Dati di esempio se nessun cliente esiste - créer 5 clients
+          const exampleCustomers = [
           {
             id: 1,
             name: 'Marco Rossi',
@@ -112,10 +118,11 @@ export default function CustomersPage() {
             isVerified: true
           }
         ];
-        setCustomersData(exampleCustomers);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('customers', JSON.stringify(exampleCustomers));
+          setCustomersData(exampleCustomers);
         }
+      } catch (error) {
+        console.error('Erreur lors du chargement des clients:', error);
+        setCustomersData([]);
       }
     };
 
@@ -133,22 +140,26 @@ export default function CustomersPage() {
       if (event?.detail?.isNew && customersData.length > 0) {
         // Petit délai pour laisser le temps à la liste de se mettre à jour
         setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }, 100);
       }
     };
     
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('customersUpdated', handleCustomersUpdated);
-    
-    // Vérifier périodiquement pour les mises à jour (synchronisation)
-    const interval = setInterval(loadCustomers, 3000);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('customersUpdated', handleCustomersUpdated);
-      clearInterval(interval);
-    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('customersUpdated', handleCustomersUpdated);
+      
+      // Vérifier périodiquement pour les mises à jour (synchronisation)
+      const interval = setInterval(loadCustomers, 3000);
+      
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('customersUpdated', handleCustomersUpdated);
+        clearInterval(interval);
+      };
+    }
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
