@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCart } from '@/utils/cart-supabase';
+import { getCart, saveCart } from '@/utils/cart-supabase';
 import { registerCustomer, updateCustomerOrderStats } from '@/utils/customers-supabase';
 import { createOrder } from '@/utils/orders-supabase';
 import { createNotification } from '@/utils/notifications';
@@ -206,7 +206,6 @@ export default function CheckoutPage() {
       }
       
       // Clear cart after successful order
-      const { saveCart } = await import('@/utils/cart-supabase');
       await saveCart([]);
       
       // Redirect to user dashboard after successful order
