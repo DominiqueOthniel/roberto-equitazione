@@ -122,6 +122,12 @@ export default function LoginPage() {
             };
             localStorage.setItem('user', JSON.stringify(userData));
             
+            // Sauvegarder l'email pour la synchronisation entre appareils
+            if (customer.email) {
+              localStorage.setItem('sync_email', customer.email.trim().toLowerCase());
+              console.log('✅ Email de synchronisation sauvegardé:', customer.email);
+            }
+            
             // Déclencher un événement pour notifier les composants de la connexion
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('userLoggedIn'));

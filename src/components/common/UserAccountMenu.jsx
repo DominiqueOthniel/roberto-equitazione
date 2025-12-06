@@ -26,6 +26,11 @@ export default function UserAccountMenu() {
         setIsAuthenticated(true);
         setUserName(userData?.name || 'Utente');
         
+        // Sauvegarder l'email pour la synchronisation entre appareils
+        if (userData?.email) {
+          localStorage.setItem('sync_email', userData.email.trim().toLowerCase());
+        }
+        
         // Enregistrer automatiquement le client dans l'admin seulement si nécessaire
         if (!skipRegister && !isRegisteringRef.current) {
           isRegisteringRef.current = true;

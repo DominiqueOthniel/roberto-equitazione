@@ -15,10 +15,11 @@ async function getUserId() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
+      console.log('✅ [Chat] Utilisateur authentifié via Supabase:', session.user.id);
       return session.user.id;
     }
   } catch (error) {
-    console.warn('⚠️ Erreur getSession:', error);
+    console.warn('⚠️ [Chat] Erreur getSession:', error);
   }
   
   // Fallback: utiliser localStorage user (utilisateurs non authentifiés)
@@ -27,26 +28,39 @@ async function getUserId() {
     try {
       const userData = JSON.parse(user);
       const email = userData.email;
-      if (email) {
-        return email;
+      if (email && email.trim()) {
+        console.log('📧 [Chat] Utilisation email utilisateur:', email);
+        // Sauvegarder comme email de synchronisation pour la cohérence
+        localStorage.setItem('sync_email', email.trim().toLowerCase());
+        return email.trim().toLowerCase();
       }
     } catch (error) {
-      console.warn('⚠️ Erreur parsing user:', error);
+      console.warn('⚠️ [Chat] Erreur parsing user:', error);
     }
   }
   
-  // Utiliser l'email de synchronisation si disponible
+  // Utiliser l'email de synchronisation si disponible (PRIORITÉ pour la synchronisation)
   const syncEmail = localStorage.getItem('sync_email');
   if (syncEmail && syncEmail.trim()) {
+    console.log('📧 [Chat] Utilisation email de synchronisation:', syncEmail);
+    console.log('✅ [Chat] Les messages seront synchronisés entre tous les appareils utilisant cet email');
     return syncEmail.trim().toLowerCase();
   }
   
-  // Si aucun utilisateur, créer un ID temporaire
+  // Si aucun utilisateur, créer un ID temporaire (NON synchronisé entre appareils)
   let guestId = localStorage.getItem('guest_id');
   if (!guestId) {
     guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('guest_id', guestId);
   }
+  
+  // Afficher le warning seulement une fois par session
+  if (!sessionStorage.getItem('chat_guest_warning_shown')) {
+    console.warn('⚠️ [Chat] Utilisateur invité - Messages NON synchronisés entre appareils');
+    console.warn('💡 [Chat] Astuce: Utilisez le même email dans "Mon Compte" sur tous vos appareils pour synchroniser');
+    sessionStorage.setItem('chat_guest_warning_shown', 'true');
+  }
+  
   return guestId;
 }
 
