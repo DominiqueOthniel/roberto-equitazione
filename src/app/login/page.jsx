@@ -191,6 +191,7 @@ export default function LoginPage() {
                       value={formData.nome}
                       onChange={handleInputChange}
                       required
+                      autoComplete="given-name"
                       className="w-full px-4 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
