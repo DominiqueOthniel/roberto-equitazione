@@ -48,7 +48,7 @@ export default function ChatWidget() {
 
   // Charger et écouter les messages
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || typeof window === 'undefined') return;
 
     // Charger les messages depuis localStorage au montage
     const loadMessages = () => {

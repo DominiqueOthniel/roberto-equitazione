@@ -52,6 +52,11 @@ export default function UserAccountMenu() {
   useEffect(() => {
     // Marquer comme monté pour éviter les erreurs d'hydratation
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || typeof window === 'undefined') return;
+    
     checkAuth();
     
     // Écouter les événements de connexion/déconnexion
@@ -84,7 +89,7 @@ export default function UserAccountMenu() {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(intervalId);
     };
-  }, []);
+  }, [isMounted]);
 
   // Gérer les clics extérieurs seulement quand le menu est ouvert
   useEffect(() => {

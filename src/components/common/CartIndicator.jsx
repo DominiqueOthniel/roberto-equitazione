@@ -3,42 +3,36 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
+import { getCartTotalQuantity } from '@/utils/cart-supabase';
 
 export default function CartIndicator() {
   const [cartCount, setCartCount] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const updateCartCount = () => {
-    if (typeof window === 'undefined') return;
+  const updateCartCount = async () => {
+    if (typeof window === 'undefined' || !mounted) return;
     
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
-      try {
-        const cart = JSON.parse(storedCart);
-        // Calculer le total des quantités plutôt que le nombre d'items
-        const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        setCartCount(totalQuantity);
-      } catch (error) {
-        setCartCount(0);
-      }
-    } else {
+    try {
+      const totalQuantity = await getCartTotalQuantity();
+      setCartCount(totalQuantity);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du compteur:', error);
       setCartCount(0);
     }
   };
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || typeof window === 'undefined') return;
+
     updateCartCount();
 
-    const handleCartUpdate = (event) => {
-      // Si l'événement contient un count, l'utiliser, sinon recalculer
-      if (event?.detail?.count !== undefined) {
-        // Recalculer depuis localStorage pour obtenir le total des quantités
-        updateCartCount();
-      } else {
-        updateCartCount();
-      }
+    const handleCartUpdate = async () => {
+      await updateCartCount();
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 300);
     };
@@ -46,13 +40,13 @@ export default function CartIndicator() {
     window.addEventListener('cartUpdated', handleCartUpdate);
     
     // Écouter aussi les changements de localStorage (au cas où d'autres onglets modifient le panier)
-    window.addEventListener('storage', updateCartCount);
+    window.addEventListener('storage', handleCartUpdate);
 
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
-      window.removeEventListener('storage', updateCartCount);
+      window.removeEventListener('storage', handleCartUpdate);
     };
-  }, []);
+  }, [mounted]);
 
   return (
     <Link
