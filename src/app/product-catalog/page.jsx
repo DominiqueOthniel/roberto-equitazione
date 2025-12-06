@@ -3,9 +3,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import FilterSidebar from '@/components/product/FilterSidebar';
 import ProductCard from '@/components/product/ProductCard';
+import { getProducts } from '@/utils/products-supabase';
 
-// Données de produits d'exemple
-const productsData = [
+// Données de produits de fallback (si Supabase est vide)
+const fallbackProductsData = [
   {
     id: 1,
     name: 'Sella Salto Leggera',
@@ -261,6 +262,8 @@ const productsData = [
 ];
 
 export default function ProductCatalogPage() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     priceRange: [0, 10000],
     types: [],
@@ -272,13 +275,56 @@ export default function ProductCatalogPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const productsPerLoad = 3;
 
+  // Charger les produits depuis Supabase
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const productsData = await getProducts();
+        
+        // Transformer les données Supabase au format attendu
+        const formattedProducts = productsData.map(product => ({
+          id: product.id,
+          name: product.name,
+          brand: product.brand || '',
+          image: product.images && product.images.length > 0 ? product.images[0] : '',
+          price: parseFloat(product.price) || 0,
+          originalPrice: product.original_price ? parseFloat(product.original_price) : null,
+          rating: product.rating ? parseFloat(product.rating) : 0,
+          reviews: product.reviews_count || 0,
+          isNew: product.is_new || false,
+          type: product.type || '',
+          size: product.size || '',
+          material: product.material || ''
+        }));
+
+        if (formattedProducts.length > 0) {
+          setProducts(formattedProducts);
+        } else {
+          // Fallback vers les données statiques si Supabase est vide
+          setProducts(fallbackProductsData);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des produits:', error);
+        // Fallback vers les données statiques en cas d'erreur
+        setProducts(fallbackProductsData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
   // Réinitialiser displayedCount quand les filtres ou le tri changent
   useEffect(() => {
     setDisplayedCount(3);
   }, [filters, sortBy]);
 
   const filteredProducts = useMemo(() => {
-    let filtered = productsData.filter(product => {
+    if (products.length === 0) return [];
+    
+    let filtered = products.filter(product => {
       // Filter by price
       if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
         return false;
@@ -418,11 +464,24 @@ export default function ProductCatalogPage() {
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {displayedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-text-secondary">Caricamento prodotti...</p>
+                </div>
+              </div>
+            ) : displayedProducts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-text-secondary mb-4">Nessun prodotto trovato</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                {displayedProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
 
             {/* Load More Button */}
             {hasMore && (
