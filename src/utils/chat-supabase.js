@@ -98,9 +98,23 @@ export async function getChatMessages() {
     }
 
     if (!data || data.length === 0) {
+      console.log('ℹ️ Aucun message trouvé, création du message de bienvenue...');
       // Si aucun message, créer le message de bienvenue
       const welcomeMessage = await createWelcomeMessage();
-      return welcomeMessage ? [welcomeMessage] : [];
+      if (welcomeMessage) {
+        // Sauvegarder dans localStorage aussi
+        saveChatMessageLocalStorage(welcomeMessage);
+        return [welcomeMessage];
+      }
+      // Si la création échoue, retourner un message de bienvenue local
+      const localWelcome = {
+        id: Date.now(),
+        sender: 'agent',
+        text: 'Ciao! Come posso aiutarti oggi con la selezione della tua sella?',
+        timestamp: new Date(),
+      };
+      saveChatMessageLocalStorage(localWelcome);
+      return [localWelcome];
     }
 
     // Transformer les données Supabase au format attendu

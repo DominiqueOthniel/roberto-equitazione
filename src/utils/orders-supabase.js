@@ -14,25 +14,33 @@ async function getUserId() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
-      console.log('Utilisateur authentifié via Supabase:', session.user.id);
+      console.log('✅ [Orders] Utilisateur authentifié via Supabase:', session.user.id);
       return session.user.id;
     }
   } catch (error) {
-    console.warn('Erreur getSession:', error);
+    console.warn('⚠️ [Orders] Erreur getSession:', error);
   }
   
+  // Fallback: utiliser localStorage user (utilisateurs non authentifiés)
   const user = localStorage.getItem('user');
   if (user) {
     try {
       const userData = JSON.parse(user);
-      const userId = userData.id || userData.email;
-      if (userId) {
-        console.log('Utilisateur non authentifié, ID:', userId);
-        return userId;
+      const email = userData.email;
+      if (email) {
+        console.log('📧 [Orders] Utilisation email pour synchronisation:', email);
+        return email; // Retourner l'email directement pour les ordres
       }
     } catch (error) {
-      console.warn('Erreur parsing user:', error);
+      console.warn('⚠️ [Orders] Erreur parsing user:', error);
     }
+  }
+  
+  // Utiliser l'email de synchronisation si disponible
+  const syncEmail = localStorage.getItem('sync_email');
+  if (syncEmail && syncEmail.trim()) {
+    console.log('📧 [Orders] Utilisation email de synchronisation:', syncEmail);
+    return syncEmail.trim().toLowerCase();
   }
   
   // Si aucun utilisateur, créer un ID temporaire basé sur le navigateur
@@ -41,7 +49,8 @@ async function getUserId() {
     guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('guest_id', guestId);
   }
-  console.log('Utilisateur invité, ID:', guestId);
+  console.warn('⚠️ [Orders] Utilisateur invité, ID:', guestId);
+  console.warn('⚠️ [Orders] Les ordres ne seront PAS synchronisés entre appareils');
   return guestId;
 }
 
@@ -122,9 +131,12 @@ export async function createOrder(orderData) {
     const userId = await getUserId();
     
     // Mapper les données au format de la table Supabase
+    const customerEmail = orderData.customer_email || orderData.email || '';
+    
     const order = {
-      user_id: userId,
-      email: orderData.customer_email || orderData.email || '',
+      // user_id peut être UUID (authentifié) ou email (non authentifié)
+      user_id: typeof userId === 'string' && userId.includes('@') ? null : userId,
+      email: customerEmail, // Toujours utiliser email pour la synchronisation
       nome: orderData.customer_name?.split(' ')[0] || orderData.nome || '',
       cognome: orderData.customer_name?.split(' ').slice(1).join(' ') || orderData.cognome || '',
       telefono: orderData.customer_phone || orderData.telefono || '',
@@ -137,6 +149,12 @@ export async function createOrder(orderData) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    
+    console.log('📦 [Orders] Création commande avec:', {
+      user_id: order.user_id,
+      email: order.email,
+      total: order.total
+    });
 
     console.log('Création commande dans Supabase:', order);
 
