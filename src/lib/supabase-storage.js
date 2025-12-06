@@ -143,12 +143,15 @@ export async function uploadFile(bucket, path, file, options = {}) {
     }
     
     // Upload du fichier principal
-    const { data, error } = await supabase.storage
+    let uploadResult = await supabase.storage
       .from(bucket)
       .upload(path, file, {
         cacheControl: '3600',
         upsert: true,
       });
+
+    let data = uploadResult.data;
+    let error = uploadResult.error;
 
     if (error) {
       console.error('❌ Erreur upload Supabase:', error);
@@ -164,26 +167,31 @@ export async function uploadFile(bucket, path, file, options = {}) {
       if (error.message?.includes('Bucket not found') || error.message?.includes('does not exist')) {
         errorMessage = `Le bucket "${bucket}" n'existe pas. Veuillez le créer dans Supabase Storage (Dashboard → Storage → New bucket).`;
       } else if (error.message?.includes('new row violates row-level security') || error.statusCode === 403) {
-        errorMessage = 'Permission refusée. Vérifiez les RLS policies du bucket dans Supabase.';
-      } else if (error.message?.includes('The resource already exists')) {
+        errorMessage = 'Permission refusée. Vérifiez les RLS policies du bucket dans Supabase. Exécutez le script supabase-storage-setup.sql.';
+      } else if (error.message?.includes('The resource already exists') || error.message?.includes('already exists')) {
         // Si le fichier existe déjà, essayer de le remplacer
         console.log('ℹ️ Le fichier existe déjà, tentative de remplacement...');
-        const { data: updateData, error: updateError } = await supabase.storage
+        const updateResult = await supabase.storage
           .from(bucket)
           .update(path, file, {
             cacheControl: '3600',
           });
         
-        if (updateError) {
-          throw updateError;
+        if (updateResult.error) {
+          console.error('❌ Erreur lors du remplacement:', updateResult.error);
+          errorMessage = `Erreur lors du remplacement du fichier: ${updateResult.error.message}`;
+          throw new Error(errorMessage);
         }
         
-        data = updateData;
+        data = updateResult.data;
+        error = null; // Réinitialiser l'erreur
       } else {
         errorMessage = `Erreur: ${error.message || 'Erreur inconnue'}`;
       }
       
-      throw new Error(errorMessage);
+      if (error) {
+        throw new Error(errorMessage);
+      }
     }
 
     console.log('✅ Fichier uploadé:', data.path);
