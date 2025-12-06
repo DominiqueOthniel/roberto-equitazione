@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
+import { createProduct } from '@/utils/products-supabase';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -98,49 +99,47 @@ export default function NewProductPage() {
     setIsSubmitting(true);
 
     try {
-      if (typeof window === 'undefined') return;
-      
-      // Récupérer les produits existants
-      const storedProducts = localStorage.getItem('products');
-      const products = storedProducts ? JSON.parse(storedProducts) : [];
-
-      // Créer un nouvel ID
-      const newId = products.length > 0 ? Math.max(...products.map((p) => p.id || 0)) + 1 : 1;
+      console.log('🛒 [NewProduct] Début création produit...');
+      console.log('🛒 [NewProduct] Données formulaire:', formData);
 
       // Préparer les images (ajouter l'image principale si elle existe)
       const allImages = formData.image 
         ? [formData.image, ...formData.images].filter(Boolean)
         : formData.images;
 
-      // Ajouter le nouveau produit
-      const newProduct = {
-        id: newId,
+      // Préparer les données pour Supabase
+      const productData = {
         name: formData.name.trim(),
         brand: formData.brand.trim(),
-        image: formData.image || (allImages.length > 0 ? allImages[0] : ''),
-        images: allImages,
         price: parseFloat(formData.price),
-        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+        original_price: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         type: formData.type,
         size: formData.size || null,
         material: formData.material || null,
-        stock: parseInt(formData.stock) || 0,
+        images: allImages.length > 0 ? allImages : (formData.image ? [formData.image] : []),
         rating: parseFloat(formData.rating) || 0,
-        reviews: parseInt(formData.reviews) || 0,
-        isNew: formData.isNew,
+        reviews_count: parseInt(formData.reviews) || 0,
+        is_new: formData.isNew || false,
         description: formData.description.trim() || null,
-        status: formData.status,
-        createdAt: new Date().toISOString(),
       };
 
-      products.push(newProduct);
-      localStorage.setItem('products', JSON.stringify(products));
+      console.log('🛒 [NewProduct] Données préparées pour Supabase:', productData);
+
+      // Créer le produit dans Supabase
+      const newProduct = await createProduct(productData);
+
+      console.log('✅ [NewProduct] Produit créé avec succès:', newProduct);
+
+      if (!newProduct) {
+        throw new Error('Le produit n\'a pas été créé');
+      }
 
       // Rediriger vers la liste des produits
       router.push('/admin/products');
     } catch (error) {
-      console.error('Erreur lors de la création du produit:', error);
-      alert('Errore durante la creazione del prodotto. Riprova.');
+      console.error('❌ [NewProduct] Erreur lors de la création du produit:', error);
+      console.error('❌ [NewProduct] Détails:', error.message, error.stack);
+      alert(`Errore durante la creazione del prodotto: ${error.message || 'Errore sconosciuto'}`);
     } finally {
       setIsSubmitting(false);
     }
