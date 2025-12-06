@@ -67,6 +67,13 @@ export async function getCartFromSupabase() {
     return getCartFromLocalStorage();
   }
 
+  // Désactiver temporairement Supabase si erreur 406 persistante
+  const disableSupabase = localStorage.getItem('disable_supabase_cart') === 'true';
+  if (disableSupabase) {
+    console.warn('⚠️ Supabase désactivé pour le panier (erreur 406)');
+    return getCartFromLocalStorage();
+  }
+
   try {
     console.log('📥 Récupération panier depuis Supabase, user_id:', userId);
     
@@ -83,9 +90,20 @@ export async function getCartFromSupabase() {
       console.error('  Détails:', error.details);
       console.error('  Hint:', error.hint);
       
-      if (error.code === 'PGRST301' || error.message?.includes('406')) {
-        console.error('⚠️ Erreur 406: Les politiques RLS bloquent l\'accès');
-        console.error('⚠️ Exécutez le script supabase-fix-406-error.sql dans Supabase SQL Editor');
+      // Si erreur 406, désactiver Supabase pour le panier et utiliser localStorage uniquement
+      if (error.code === 'PGRST301' || error.message?.includes('406') || error.code === '406') {
+        console.error('⚠️ Erreur 406 détectée: Les politiques RLS bloquent l\'accès');
+        console.error('⚠️ Désactivation de Supabase pour le panier - utilisation de localStorage uniquement');
+        console.error('⚠️ Pour corriger: Exécutez supabase-disable-rls-temporarily.sql dans Supabase SQL Editor');
+        
+        // Désactiver Supabase pour éviter les requêtes répétées
+        localStorage.setItem('disable_supabase_cart', 'true');
+        
+        // Afficher une alerte à l'utilisateur (optionnel)
+        if (typeof window !== 'undefined' && !localStorage.getItem('supabase_error_shown')) {
+          console.warn('💡 Le panier fonctionne maintenant avec localStorage uniquement');
+          localStorage.setItem('supabase_error_shown', 'true');
+        }
       }
       
       return getCartFromLocalStorage(); // Fallback
@@ -97,11 +115,21 @@ export async function getCartFromSupabase() {
     }
 
     console.log('✅ Panier récupéré depuis Supabase, items:', data.items?.length || 0);
+    
+    // Réactiver Supabase si ça fonctionne
+    localStorage.removeItem('disable_supabase_cart');
+    
     return data.items || [];
   } catch (error) {
     console.error('❌ Erreur getCartFromSupabase:', error);
     console.error('  Type:', error.constructor.name);
     console.error('  Message:', error.message);
+    
+    // Si erreur réseau ou 406, désactiver Supabase
+    if (error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+      localStorage.setItem('disable_supabase_cart', 'true');
+    }
+    
     return getCartFromLocalStorage(); // Fallback
   }
 }
@@ -130,6 +158,14 @@ export async function saveCartToSupabase(cart) {
     console.warn('⚠️ Pas d\'utilisateur, sauvegarde dans localStorage uniquement');
     console.warn('⚠️ Les données ne seront PAS synchronisées entre appareils');
     // Si pas d'utilisateur, sauvegarder seulement dans localStorage
+    saveCartToLocalStorage(cart);
+    return;
+  }
+
+  // Vérifier si Supabase est désactivé (erreur 406)
+  const disableSupabase = localStorage.getItem('disable_supabase_cart') === 'true';
+  if (disableSupabase) {
+    console.warn('⚠️ Supabase désactivé pour le panier (erreur 406), sauvegarde localStorage uniquement');
     saveCartToLocalStorage(cart);
     return;
   }
@@ -166,11 +202,21 @@ export async function saveCartToSupabase(cart) {
       console.error('  Message:', error.message);
       console.error('  Détails:', error.details);
       console.error('  Hint:', error.hint);
-      console.error('\n⚠️  Vérifiez que:');
-      console.error('  1. Le script SQL supabase-schema-fix-anonymous-users.sql a été exécuté');
-      console.error('  2. Les politiques RLS permettent les INSERT/UPDATE');
-      console.error('  3. La colonne user_id est de type TEXT');
-      console.error('  4. La table user_carts existe');
+      
+      // Si erreur 406, désactiver Supabase pour éviter les requêtes répétées
+      if (error.code === 'PGRST301' || error.message?.includes('406') || error.code === '406') {
+        console.error('⚠️ Erreur 406 détectée: Désactivation de Supabase pour le panier');
+        localStorage.setItem('disable_supabase_cart', 'true');
+        console.error('⚠️ Le panier fonctionnera maintenant avec localStorage uniquement');
+        console.error('⚠️ Pour corriger: Exécutez supabase-disable-rls-temporarily.sql dans Supabase SQL Editor');
+      } else {
+        console.error('\n⚠️  Vérifiez que:');
+        console.error('  1. Le script SQL supabase-schema-fix-anonymous-users.sql a été exécuté');
+        console.error('  2. Les politiques RLS permettent les INSERT/UPDATE');
+        console.error('  3. La colonne user_id est de type TEXT');
+        console.error('  4. La table user_carts existe');
+      }
+      
       console.warn('⚠️ Fallback: Sauvegarde dans localStorage uniquement');
       // Fallback: sauvegarder dans localStorage (IMPORTANT: toujours sauvegarder localement)
       saveCartToLocalStorage(cart);
