@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
 import { createProduct } from '@/utils/products-supabase';
+import { uploadProductImage } from '@/lib/supabase-storage';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -30,6 +31,56 @@ export default function NewProductPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const fileInputRef = useRef(null);
+  const additionalImagesInputRef = useRef(null);
+
+  const handleImageUpload = async (e, isMain = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier que c'est une image
+    if (!file.type.startsWith('image/')) {
+      alert('Per favore, seleziona un file immagine.');
+      return;
+    }
+
+    // Vérifier la taille (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('L\'immagine è troppo grande. Dimensione massima: 5MB.');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const productName = formData.name || 'product';
+      const imageUrl = await uploadProductImage(file, productName);
+      
+      console.log('✅ Image uploadée:', imageUrl);
+
+      if (isMain) {
+        setFormData(prev => ({ ...prev, image: imageUrl }));
+        setImagePreview(imageUrl);
+      } else {
+        setFormData(prev => ({ ...prev, images: [...prev.images, imageUrl] }));
+        setUploadedImages(prev => [...prev, imageUrl]);
+      }
+
+      // Réinitialiser l'input
+      if (isMain && fileInputRef.current) {
+        fileInputRef.current.value = '';
+      } else if (!isMain && additionalImagesInputRef.current) {
+        additionalImagesInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('❌ Erreur upload image:', error);
+      alert('Errore durante l\'upload dell\'immagine. Riprova.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -249,16 +300,30 @@ export default function NewProductPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Immagine Principale (URL)
+                    Immagine Principale
                   </label>
-                  <input
-                    type="url"
-                    name="image"
-                    value={formData.image}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, true)}
+                      disabled={uploadingImage}
+                      className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-accent disabled:opacity-50"
+                    />
+                    <p className="text-xs text-text-secondary">Oppure inserisci un URL:</p>
+                    <input
+                      type="url"
+                      name="image"
+                      value={formData.image}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  {uploadingImage && (
+                    <p className="text-sm text-text-secondary mt-2">Upload in corso...</p>
+                  )}
                 </div>
 
                 {imagePreview && (
@@ -278,13 +343,24 @@ export default function NewProductPage() {
                   <label className="block text-sm font-medium text-text-primary mb-2">
                     Immagini Aggiuntive
                   </label>
-                  <button
-                    type="button"
-                    onClick={addImageUrl}
-                    className="px-4 py-2 border border-input rounded-md bg-background text-text-primary hover:bg-muted transition-fast mb-3"
-                  >
-                    + Aggiungi URL Immagine
-                  </button>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="file"
+                      ref={additionalImagesInputRef}
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, false)}
+                      disabled={uploadingImage}
+                      className="flex-1 px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-accent disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={addImageUrl}
+                      disabled={uploadingImage}
+                      className="px-4 py-2 border border-input rounded-md bg-background text-text-primary hover:bg-muted transition-fast disabled:opacity-50"
+                    >
+                      + URL
+                    </button>
+                  </div>
                   {formData.images.length > 0 && (
                     <div className="grid grid-cols-4 gap-2">
                       {formData.images.map((img, index) => (

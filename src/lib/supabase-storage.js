@@ -118,10 +118,12 @@ export async function getThumbnailUrl(bucket, path, width = 300, height = 300) {
  * @param {string} path - Chemin de destination
  * @param {File} file - Fichier à uploader
  * @param {Object} options - Options (createThumbnail, resize, etc.)
- * @returns {Promise<{path: string, thumbnailPath?: string}>}
+ * @returns {Promise<{path: string, url: string, thumbnailPath?: string}>}
  */
 export async function uploadFile(bucket, path, file, options = {}) {
   try {
+    console.log('📤 Upload fichier:', { bucket, path, fileName: file.name, size: file.size });
+    
     // Upload du fichier principal
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -131,16 +133,59 @@ export async function uploadFile(bucket, path, file, options = {}) {
       });
 
     if (error) {
+      console.error('❌ Erreur upload:', error);
       throw error;
     }
 
+    console.log('✅ Fichier uploadé:', data.path);
+
+    // Récupérer l'URL publique
+    const { data: urlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(data.path);
+
+    const publicUrl = urlData.publicUrl;
+    console.log('✅ URL publique:', publicUrl);
+
     // Si on veut créer une miniature, il faudrait le faire côté serveur
-    // Pour l'instant, on retourne juste le chemin
+    // Pour l'instant, on retourne juste le chemin et l'URL
     return {
       path: data.path,
+      url: publicUrl,
     };
   } catch (error) {
-    console.error('Erreur uploadFile:', error);
+    console.error('❌ Erreur uploadFile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload une image de produit
+ * @param {File} file - Fichier image à uploader
+ * @param {string} productName - Nom du produit (pour générer le nom de fichier)
+ * @returns {Promise<string>} URL publique de l'image
+ */
+export async function uploadProductImage(file, productName = 'product') {
+  try {
+    // Générer un nom de fichier unique
+    const timestamp = Date.now();
+    const sanitizedName = productName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 50);
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `${sanitizedName}-${timestamp}.${fileExtension}`;
+    const path = `products/${fileName}`;
+
+    console.log('📤 Upload image produit:', { fileName, path, size: file.size });
+
+    const result = await uploadFile('products', path, file);
+    
+    console.log('✅ Image produit uploadée:', result.url);
+    return result.url;
+  } catch (error) {
+    console.error('❌ Erreur uploadProductImage:', error);
     throw error;
   }
 }
