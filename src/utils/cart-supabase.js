@@ -237,31 +237,71 @@ export async function saveCartToSupabase(cart) {
 
 /**
  * Save cart to localStorage (cache local)
+ * FONCTION CRITIQUE - DOIT TOUJOURS FONCTIONNER
  */
 function saveCartToLocalStorage(cart) {
   if (typeof window === 'undefined') {
     console.warn('⚠️ window is undefined, impossible de sauvegarder dans localStorage');
-    return;
+    return false;
   }
   
   try {
-    console.log('💾 Sauvegarde dans localStorage, items:', cart.length);
+    console.log('💾 [saveCartToLocalStorage] Début sauvegarde, items:', cart.length);
+    
+    // Vérifier que cart est un array
+    if (!Array.isArray(cart)) {
+      console.error('❌ [saveCartToLocalStorage] cart n\'est pas un array:', typeof cart);
+      return false;
+    }
+    
     const cartJson = JSON.stringify(cart);
+    console.log('💾 [saveCartToLocalStorage] JSON généré, taille:', cartJson.length, 'caractères');
+    
     localStorage.setItem('cart', cartJson);
-    console.log('✅ Panier sauvegardé dans localStorage');
+    console.log('✅ [saveCartToLocalStorage] Panier sauvegardé dans localStorage');
+    
+    // Vérifier que la sauvegarde a fonctionné
+    const verification = localStorage.getItem('cart');
+    if (verification === cartJson) {
+      console.log('✅ [saveCartToLocalStorage] Vérification: Sauvegarde confirmée');
+    } else {
+      console.error('❌ [saveCartToLocalStorage] Vérification échouée: Les données ne correspondent pas');
+      return false;
+    }
     
     // Trigger cart update event
     const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    console.log('📢 Déclenchement événement cartUpdated, quantité totale:', totalQuantity);
-    window.dispatchEvent(new CustomEvent('cartUpdated', {
+    console.log('📢 [saveCartToLocalStorage] Déclenchement événement cartUpdated, quantité totale:', totalQuantity);
+    
+    const event = new CustomEvent('cartUpdated', {
       detail: { count: totalQuantity, cart }
-    }));
-    console.log('✅ Événement cartUpdated déclenché');
+    });
+    window.dispatchEvent(event);
+    console.log('✅ [saveCartToLocalStorage] Événement cartUpdated déclenché');
+    
+    return true;
   } catch (error) {
-    console.error('❌ ERREUR lors de la sauvegarde dans localStorage:', error);
+    console.error('❌ [saveCartToLocalStorage] ERREUR lors de la sauvegarde:', error);
     console.error('  Type:', error.constructor.name);
     console.error('  Message:', error.message);
     console.error('  Stack:', error.stack);
+    
+    // Essayer de sauvegarder avec une méthode alternative
+    try {
+      console.log('🔄 [saveCartToLocalStorage] Tentative de sauvegarde alternative...');
+      const simpleCart = cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity || 1
+      }));
+      localStorage.setItem('cart', JSON.stringify(simpleCart));
+      console.log('✅ [saveCartToLocalStorage] Sauvegarde alternative réussie');
+      return true;
+    } catch (fallbackError) {
+      console.error('❌ [saveCartToLocalStorage] Sauvegarde alternative échouée:', fallbackError);
+      return false;
+    }
   }
 }
 

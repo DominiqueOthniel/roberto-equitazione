@@ -31,9 +31,10 @@ export default function ProductCard({ product }) {
     setIsAdding(true);
     
     try {
-      console.log('🛒 Ajout du produit au panier:', name);
+      console.log('🛒 [ProductCard] Ajout du produit au panier:', name);
+      console.log('🛒 [ProductCard] Données produit:', { id, name, brand, price });
       
-      await addToCart({
+      const result = await addToCart({
         id,
         name,
         brand,
@@ -46,14 +47,26 @@ export default function ProductCard({ product }) {
         }
       });
       
-      console.log('✅ Produit ajouté au panier avec succès:', name);
+      console.log('✅ [ProductCard] Produit ajouté avec succès, panier:', result);
       
-      // Feedback visuel (optionnel: vous pouvez ajouter une notification toast ici)
-      // Par exemple: toast.success('Prodotto aggiunto al carrello!');
+      // Vérifier que le panier est bien dans localStorage
+      if (typeof window !== 'undefined') {
+        const storedCart = localStorage.getItem('cart');
+        if (storedCart) {
+          const parsedCart = JSON.parse(storedCart);
+          console.log('✅ [ProductCard] Panier vérifié dans localStorage, items:', parsedCart.length);
+        } else {
+          console.error('❌ [ProductCard] Panier NON trouvé dans localStorage après ajout !');
+        }
+      }
+      
+      // Feedback visuel immédiat
+      alert(`✅ ${name} aggiunto al carrello!`);
       
     } catch (error) {
-      console.error('❌ Erreur lors de l\'ajout au panier:', error);
-      alert('Erreur lors de l\'ajout au panier. Vérifiez la console pour plus de détails.');
+      console.error('❌ [ProductCard] Erreur lors de l\'ajout au panier:', error);
+      console.error('❌ [ProductCard] Stack:', error.stack);
+      alert(`❌ Erreur: ${error.message || 'Impossible d\'ajouter au panier'}`);
     } finally {
       setIsAdding(false);
     }
