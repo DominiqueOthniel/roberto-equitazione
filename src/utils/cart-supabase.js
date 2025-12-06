@@ -68,20 +68,40 @@ export async function getCartFromSupabase() {
   }
 
   try {
+    console.log('📥 Récupération panier depuis Supabase, user_id:', userId);
+    
     const { data, error } = await supabase
       .from('user_carts')
       .select('items')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter l'erreur si pas trouvé
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-      console.error('Erreur lors de la récupération du panier:', error);
+    if (error) {
+      console.error('❌ Erreur lors de la récupération du panier:', error);
+      console.error('  Code:', error.code);
+      console.error('  Message:', error.message);
+      console.error('  Détails:', error.details);
+      console.error('  Hint:', error.hint);
+      
+      if (error.code === 'PGRST301' || error.message?.includes('406')) {
+        console.error('⚠️ Erreur 406: Les politiques RLS bloquent l\'accès');
+        console.error('⚠️ Exécutez le script supabase-fix-406-error.sql dans Supabase SQL Editor');
+      }
+      
       return getCartFromLocalStorage(); // Fallback
     }
 
-    return data?.items || [];
+    if (!data) {
+      console.log('ℹ️ Aucun panier trouvé dans Supabase pour cet utilisateur');
+      return [];
+    }
+
+    console.log('✅ Panier récupéré depuis Supabase, items:', data.items?.length || 0);
+    return data.items || [];
   } catch (error) {
-    console.error('Erreur getCartFromSupabase:', error);
+    console.error('❌ Erreur getCartFromSupabase:', error);
+    console.error('  Type:', error.constructor.name);
+    console.error('  Message:', error.message);
     return getCartFromLocalStorage(); // Fallback
   }
 }
