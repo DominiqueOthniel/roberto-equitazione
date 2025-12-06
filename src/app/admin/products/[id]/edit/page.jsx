@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
+import { getProductById, updateProduct } from '@/utils/products-supabase';
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -35,13 +36,18 @@ export default function EditProductPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    const loadProduct = () => {
+    const loadProduct = async () => {
       try {
-    const products = JSON.parse(localStorage.getItem('products') || '[]');
-    const foundProduct = products.find((p) => p.id === parseInt(params.id));
+        setLoading(true);
+        console.log('📥 Chargement produit avec ID:', params.id);
         
-    if (foundProduct) {
-      setProduct(foundProduct);
+        // Charger depuis Supabase
+        const foundProduct = await getProductById(params.id);
+        
+        if (foundProduct) {
+          console.log('✅ Produit trouvé:', foundProduct);
+          setProduct(foundProduct);
+          
           // Préparer les données du formulaire
           const images = foundProduct.images || [];
           const mainImage = foundProduct.image || (images.length > 0 ? images[0] : '');
@@ -55,14 +61,14 @@ export default function EditProductPage() {
             image: mainImage,
             images: otherImages,
             price: foundProduct.price || '',
-            originalPrice: foundProduct.originalPrice || '',
+            originalPrice: foundProduct.original_price || '',
             type: foundProduct.type || '',
             size: foundProduct.size || '',
             material: foundProduct.material || '',
             stock: foundProduct.stock || 0,
             rating: foundProduct.rating || 0,
-            reviews: foundProduct.reviews || 0,
-            isNew: foundProduct.isNew || false,
+            reviews: foundProduct.reviews_count || 0,
+            isNew: foundProduct.is_new || false,
             description: foundProduct.description || '',
             status: foundProduct.status || 'active',
           });
@@ -70,11 +76,13 @@ export default function EditProductPage() {
           if (mainImage) {
             setImagePreview(mainImage);
           }
+        } else {
+          console.warn('⚠️ Produit non trouvé pour ID:', params.id);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement du produit:', error);
+        console.error('❌ Erreur lors du chargement du produit:', error);
       } finally {
-    setLoading(false);
+        setLoading(false);
       }
     };
 
@@ -151,48 +159,39 @@ export default function EditProductPage() {
     setIsSubmitting(true);
 
     try {
-      if (typeof window === 'undefined') return;
-      
-      // Récupérer les produits existants
-      const storedProducts = localStorage.getItem('products');
-      const products = JSON.parse(storedProducts || '[]');
-
       // Préparer les images (ajouter l'image principale si elle existe)
       const allImages = formData.image 
         ? [formData.image, ...formData.images].filter(Boolean)
         : formData.images;
 
-      // Mettre à jour le produit
-      const updatedProduct = {
-        ...product,
+      // Préparer les données pour Supabase
+      const productData = {
         name: formData.name.trim(),
         brand: formData.brand.trim(),
         image: formData.image || (allImages.length > 0 ? allImages[0] : ''),
         images: allImages,
         price: parseFloat(formData.price),
-        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+        original_price: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         type: formData.type,
         size: formData.size || null,
         material: formData.material || null,
         stock: parseInt(formData.stock) || 0,
         rating: parseFloat(formData.rating) || 0,
-        reviews: parseInt(formData.reviews) || 0,
-        isNew: formData.isNew,
+        reviews_count: parseInt(formData.reviews) || 0,
+        is_new: formData.isNew,
         description: formData.description.trim() || null,
         status: formData.status,
-        updatedAt: new Date().toISOString(),
       };
 
-    const updatedProducts = products.map((p) =>
-        p.id === product.id ? updatedProduct : p
-    );
+      console.log('💾 Mise à jour produit dans Supabase:', productData);
       
-    localStorage.setItem('products', JSON.stringify(updatedProducts));
+      // Mettre à jour dans Supabase
+      await updateProduct(product.id, productData);
 
       // Rediriger vers la liste des produits
-    router.push('/admin/products');
+      router.push('/admin/products');
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du produit:', error);
+      console.error('❌ Erreur lors de la mise à jour du produit:', error);
       alert('Errore durante l\'aggiornamento del prodotto. Riprova.');
     } finally {
       setIsSubmitting(false);
