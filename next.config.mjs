@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     // Configuration pour Render
-    output: 'standalone', // Optimise pour Render
+    // output: 'standalone', // Désactivé temporairement pour utiliser server.js personnalisé
     productionBrowserSourceMaps: true,
     distDir: process.env.DIST_DIR || '.next',
     eslint: {
