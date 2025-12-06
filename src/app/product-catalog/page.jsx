@@ -5,8 +5,7 @@ import FilterSidebar from '@/components/product/FilterSidebar';
 import ProductCard from '@/components/product/ProductCard';
 import { getProducts } from '@/utils/products-supabase';
 
-// Données de produits de fallback (si Supabase est vide)
-const fallbackProductsData = [
+export default function ProductCatalogPage() {
   {
     id: 1,
     name: 'Sella Salto Leggera',
@@ -302,19 +301,12 @@ export default function ProductCatalogPage() {
 
         console.log('Produits formatés:', formattedProducts);
 
-        if (formattedProducts.length > 0) {
-          setProducts(formattedProducts);
-          console.log(`${formattedProducts.length} produits chargés depuis Supabase`);
-        } else {
-          console.log('Aucun produit dans Supabase, utilisation des données de fallback');
-          // Fallback vers les données statiques si Supabase est vide
-          setProducts(fallbackProductsData);
-        }
+        setProducts(formattedProducts);
+        console.log(`${formattedProducts.length} produits chargés depuis Supabase`);
       } catch (error) {
         console.error('Erreur lors du chargement des produits:', error);
         console.error('Détails de l\'erreur:', error.message, error.stack);
-        // Fallback vers les données statiques en cas d'erreur
-        setProducts(fallbackProductsData);
+        setProducts([]); // Pas de fallback, tableau vide
       } finally {
         setLoading(false);
       }
