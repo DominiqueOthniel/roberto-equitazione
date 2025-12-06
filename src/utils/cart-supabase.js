@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 /**
  * Get user ID from localStorage or Supabase session
  * Returns a string identifier (UUID for authenticated users, email for guests)
+ * 
+ * IMPORTANT: Pour synchroniser entre appareils, utilisez le même email ou connectez-vous via Supabase Auth
  */
 async function getUserId() {
   if (typeof window === 'undefined') return null;
@@ -16,11 +18,12 @@ async function getUserId() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
-      console.log('Utilisateur authentifié via Supabase:', session.user.id);
+      console.log('✅ Utilisateur authentifié via Supabase Auth:', session.user.id);
+      console.log('✅ Les données seront synchronisées entre tous vos appareils');
       return session.user.id;
     }
   } catch (error) {
-    console.warn('Erreur getSession:', error);
+    console.warn('⚠️ Erreur getSession:', error);
   }
   
   // Fallback: utiliser localStorage user (utilisateurs non authentifiés)
@@ -31,21 +34,26 @@ async function getUserId() {
       // Pour les utilisateurs non authentifiés, utiliser l'email comme identifiant
       const userId = userData.id || userData.email;
       if (userId) {
-        console.log('Utilisateur non authentifié, ID:', userId);
+        console.log('⚠️ Utilisateur non authentifié, ID basé sur email:', userId);
+        console.log('⚠️ Pour synchroniser entre appareils, utilisez le même email ou connectez-vous');
         return userId;
       }
     } catch (error) {
-      console.warn('Erreur parsing user:', error);
+      console.warn('⚠️ Erreur parsing user:', error);
     }
   }
   
   // Si aucun utilisateur, créer un ID temporaire basé sur le navigateur
+  // ⚠️ PROBLÈME: Cet ID sera différent sur chaque appareil !
   let guestId = localStorage.getItem('guest_id');
   if (!guestId) {
     guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('guest_id', guestId);
   }
-  console.log('Utilisateur invité, ID:', guestId);
+  console.warn('⚠️ Utilisateur invité, ID temporaire:', guestId);
+  console.warn('⚠️ ATTENTION: Cet ID est différent sur chaque appareil !');
+  console.warn('⚠️ Les données ne seront PAS synchronisées entre PC et téléphone');
+  console.warn('⚠️ Solution: Créez un compte ou utilisez le même email sur tous les appareils');
   return guestId;
 }
 
@@ -99,14 +107,27 @@ function getCartFromLocalStorage() {
 export async function saveCartToSupabase(cart) {
   const userId = await getUserId();
   if (!userId) {
-    console.log('Pas d\'utilisateur, sauvegarde dans localStorage uniquement');
+    console.warn('⚠️ Pas d\'utilisateur, sauvegarde dans localStorage uniquement');
+    console.warn('⚠️ Les données ne seront PAS synchronisées entre appareils');
     // Si pas d'utilisateur, sauvegarder seulement dans localStorage
     saveCartToLocalStorage(cart);
     return;
   }
 
+  // Vérifier la connexion Supabase
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.error('❌ Variables d\'environnement Supabase manquantes !');
+    console.error('  NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅' : '❌');
+    console.error('  NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅' : '❌');
+    saveCartToLocalStorage(cart);
+    return;
+  }
+
   try {
-    console.log('Sauvegarde panier dans Supabase pour user:', userId, 'items:', cart.length);
+    console.log('🔄 Sauvegarde panier dans Supabase...');
+    console.log('  User ID:', userId);
+    console.log('  Items:', cart.length);
+    console.log('  URL Supabase:', process.env.NEXT_PUBLIC_SUPABASE_URL);
     
     const { data, error } = await supabase
       .from('user_carts')
@@ -120,18 +141,29 @@ export async function saveCartToSupabase(cart) {
       .select();
 
     if (error) {
-      console.error('Erreur lors de la sauvegarde du panier:', error);
-      console.error('Détails:', error.message, error.details, error.hint);
+      console.error('❌ ERREUR lors de la sauvegarde du panier dans Supabase:');
+      console.error('  Code:', error.code);
+      console.error('  Message:', error.message);
+      console.error('  Détails:', error.details);
+      console.error('  Hint:', error.hint);
+      console.error('\n⚠️  Vérifiez que:');
+      console.error('  1. Le script SQL supabase-schema-fix-anonymous-users.sql a été exécuté');
+      console.error('  2. Les politiques RLS permettent les INSERT/UPDATE');
+      console.error('  3. La colonne user_id est de type TEXT');
+      console.error('  4. La table user_carts existe');
       // Fallback: sauvegarder dans localStorage
       saveCartToLocalStorage(cart);
     } else {
-      console.log('Panier sauvegardé avec succès dans Supabase:', data);
+      console.log('✅ Panier sauvegardé avec succès dans Supabase !');
+      console.log('  Data:', data);
       // Sauvegarder aussi dans localStorage comme cache
       saveCartToLocalStorage(cart);
     }
   } catch (error) {
-    console.error('Erreur saveCartToSupabase:', error);
-    console.error('Stack:', error.stack);
+    console.error('❌ ERREUR EXCEPTION lors de la sauvegarde:', error);
+    console.error('  Type:', error.constructor.name);
+    console.error('  Message:', error.message);
+    console.error('  Stack:', error.stack);
     saveCartToLocalStorage(cart); // Fallback
   }
 }

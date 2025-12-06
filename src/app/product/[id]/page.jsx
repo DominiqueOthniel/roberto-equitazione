@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import Link from 'next/link';
-import { addToCart } from '@/utils/cart';
+import { addToCart } from '@/utils/cart-supabase';
 import ReviewForm from '@/components/product/ReviewForm';
 
 export default function ProductDetailPage() {
