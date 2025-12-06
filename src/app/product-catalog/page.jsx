@@ -45,6 +45,9 @@ export default function ProductCatalogPage() {
         }));
 
         console.log('Produits formatés:', formattedProducts);
+        console.log('Types uniques:', [...new Set(formattedProducts.map(p => p.type))]);
+        console.log('Tailles uniques:', [...new Set(formattedProducts.map(p => p.size))]);
+        console.log('Matériaux uniques:', [...new Set(formattedProducts.map(p => p.material))]);
 
         setProducts(formattedProducts);
         console.log(`${formattedProducts.length} produits chargés depuis Supabase`);
@@ -66,7 +69,16 @@ export default function ProductCatalogPage() {
   }, [filters, sortBy]);
 
   const filteredProducts = useMemo(() => {
-    if (products.length === 0) return [];
+    if (products.length === 0) {
+      console.log('⚠️ Aucun produit à filtrer');
+      return [];
+    }
+    
+    console.log('🔍 Filtrage des produits:', {
+      total: products.length,
+      filters: filters,
+      priceRange: filters.priceRange
+    });
     
     let filtered = products.filter(product => {
       // Filter by price
@@ -91,6 +103,8 @@ export default function ProductCatalogPage() {
       
       return true;
     });
+
+    console.log('✅ Produits filtrés:', filtered.length, 'sur', products.length);
 
     // Sort products
     switch (sortBy) {
