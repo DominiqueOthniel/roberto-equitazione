@@ -64,6 +64,7 @@ export async function registerCustomer(userData) {
       email: userData.email || '',
       phone: userData.phone || userData.telefono || '',
       address: formattedAddress,
+      password_hash: userData.password || null, // Hash du mot de passe (SHA-256)
       is_verified: userData.isVerified || false,
     };
 
@@ -181,6 +182,72 @@ export async function getCustomers() {
     console.error('Erreur lors de la récupération des clients:', error);
     // Fallback localStorage
     return getCustomersLocalStorage();
+  }
+}
+
+/**
+ * Get customer by email
+ */
+export async function getCustomerByEmail(email) {
+  try {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    // Mapper les données de Supabase vers le format frontend
+    return {
+      id: data.id,
+      name: data.name || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      address: data.address || null,
+      totalOrders: data.total_orders || 0,
+      totalSpent: parseFloat(data.total_spent || 0),
+      status: data.status || 'Attivo',
+      lastOrder: data.last_order ? new Date(data.last_order).toLocaleDateString('it-IT') : null,
+      memberSince: data.created_at ? new Date(data.created_at).toLocaleDateString('it-IT') : null,
+      isVerified: data.is_verified || false
+    };
+  } catch (error) {
+    console.error('Erreur lors de la récupération du client:', error);
+    return null;
+  }
+}
+
+/**
+ * Verify password for a customer
+ */
+export async function verifyPassword(email, password) {
+  try {
+    // Hasher le mot de passe fourni
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Récupérer le client
+    const { data: customer, error } = await supabase
+      .from('customers')
+      .select('password_hash')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!customer || !customer.password_hash) {
+      return false; // Client non trouvé ou pas de mot de passe
+    }
+
+    // Comparer les hash
+    return customer.password_hash === passwordHash;
+  } catch (error) {
+    console.error('Erreur lors de la vérification du mot de passe:', error);
+    return false;
   }
 }
 

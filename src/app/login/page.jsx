@@ -4,8 +4,18 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { registerCustomer } from '@/utils/customers';
+import { registerCustomer } from '@/utils/customers-supabase';
 import { createNotification } from '@/utils/notifications';
+
+// Fonction pour hasher le mot de passe (SHA-256)
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,16 +47,27 @@ export default function LoginPage() {
     try {
       if (isNewUser) {
         // Nouvel utilisateur - inscription
-        if (!formData.email || !formData.nome || !formData.cognome) {
+        if (!formData.email || !formData.nome || !formData.cognome || !formData.password) {
           setError('Per favore, compila tutti i campi obbligatori.');
           setLoading(false);
           return;
         }
+        
+        // Vérifier que le mot de passe a au moins 6 caractères
+        if (formData.password.length < 6) {
+          setError('La password deve contenere almeno 6 caratteri.');
+          setLoading(false);
+          return;
+        }
 
+        // Hasher le mot de passe (SHA-256 simple, en production utiliser bcrypt)
+        const passwordHash = await hashPassword(formData.password);
+        
         const newUser = {
           name: `${formData.nome} ${formData.cognome}`,
           email: formData.email,
           phone: formData.telefono || '',
+          password: passwordHash, // Hash du mot de passe
           memberSince: new Date().toLocaleDateString('it-IT'),
           isVerified: false
         };
@@ -76,47 +97,30 @@ export default function LoginPage() {
         router.push('/user-dashboard');
       } else {
         // Utilisateur existant - connexion
-        if (!formData.email) {
-          setError('Per favore, inserisci la tua email.');
+        if (!formData.email || !formData.password) {
+          setError('Per favore, inserisci email e password.');
           setLoading(false);
           return;
         }
 
-        // Vérifier si l'utilisateur existe dans localStorage
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
-          if (userData.email === formData.email) {
-            // Utilisateur trouvé - mettre à jour dans la base de données admin
-            registerCustomer(userData);
-            
-            // Déclencher un événement pour notifier les composants de la connexion
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('userLoggedIn'));
-            }
-            
-            router.push('/user-dashboard');
-            return;
-          }
-        }
-
-        // Si l'utilisateur n'existe pas, chercher dans les clients enregistrés
-        const storedCustomers = localStorage.getItem('customers');
-        if (storedCustomers) {
-          const customers = JSON.parse(storedCustomers);
-          const existingCustomer = customers.find(c => c.email === formData.email);
+        // Vérifier le mot de passe via Supabase
+        const { verifyPassword } = await import('@/utils/customers-supabase');
+        const isValid = await verifyPassword(formData.email, formData.password);
+        
+        if (isValid) {
+          // Récupérer les données du client
+          const { getCustomerByEmail } = await import('@/utils/customers-supabase');
+          const customer = await getCustomerByEmail(formData.email);
           
-          if (existingCustomer) {
-            // Client trouvé dans la base admin - restaurer la session
+          if (customer) {
             const userData = {
-              name: existingCustomer.name,
-              email: existingCustomer.email,
-              phone: existingCustomer.phone || '',
-              memberSince: existingCustomer.memberSince || new Date().toLocaleDateString('it-IT'),
-              isVerified: existingCustomer.isVerified || false
+              name: customer.name,
+              email: customer.email,
+              phone: customer.phone || '',
+              memberSince: customer.memberSince || new Date().toLocaleDateString('it-IT'),
+              isVerified: customer.isVerified || false
             };
             localStorage.setItem('user', JSON.stringify(userData));
-            registerCustomer(userData);
             
             // Déclencher un événement pour notifier les composants de la connexion
             if (typeof window !== 'undefined') {
@@ -127,10 +131,9 @@ export default function LoginPage() {
             return;
           }
         }
-
-        // Aucun utilisateur trouvé - proposer l'inscription
-        setError('Utente non trovato. Vuoi registrarti?');
-        setIsNewUser(true);
+        
+        // Mot de passe incorrect ou utilisateur non trouvé
+        setError('Email o password non corretti.');
       }
     } catch (error) {
       console.error('Erreur lors de la connexion:', error);
@@ -238,22 +241,28 @@ export default function LoginPage() {
               />
             </div>
 
-            {!isNewUser && (
-              <div>
-                <label htmlFor="password" className="block text-sm font-body font-semibold text-text-primary mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="(Opzionale per la demo)"
-                />
-              </div>
-            )}
+            <div>
+              <label htmlFor="password" className="block text-sm font-body font-semibold text-text-primary mb-2">
+                Password {!isNewUser && <span className="text-error">*</span>}
+                {isNewUser && <span className="text-error">*</span>}
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required={isNewUser}
+                minLength={isNewUser ? 6 : 0}
+                className="w-full px-4 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder={isNewUser ? "Minimo 6 caratteri" : "Inserisci la tua password"}
+              />
+              {isNewUser && (
+                <p className="mt-1 text-xs text-text-secondary">
+                  La password deve contenere almeno 6 caratteri
+                </p>
+              )}
+            </div>
 
             <div>
               <button
