@@ -151,12 +151,13 @@ export async function saveCartToSupabase(cart) {
       console.error('  2. Les politiques RLS permettent les INSERT/UPDATE');
       console.error('  3. La colonne user_id est de type TEXT');
       console.error('  4. La table user_carts existe');
-      // Fallback: sauvegarder dans localStorage
+      console.warn('⚠️ Fallback: Sauvegarde dans localStorage uniquement');
+      // Fallback: sauvegarder dans localStorage (IMPORTANT: toujours sauvegarder localement)
       saveCartToLocalStorage(cart);
     } else {
       console.log('✅ Panier sauvegardé avec succès dans Supabase !');
       console.log('  Data:', data);
-      // Sauvegarder aussi dans localStorage comme cache
+      // Sauvegarder aussi dans localStorage comme cache (TOUJOURS sauvegarder localement)
       saveCartToLocalStorage(cart);
     }
   } catch (error) {
@@ -172,17 +173,29 @@ export async function saveCartToSupabase(cart) {
  * Save cart to localStorage (cache local)
  */
 function saveCartToLocalStorage(cart) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ window is undefined, impossible de sauvegarder dans localStorage');
+    return;
+  }
   
   try {
-    localStorage.setItem('cart', JSON.stringify(cart));
+    console.log('💾 Sauvegarde dans localStorage, items:', cart.length);
+    const cartJson = JSON.stringify(cart);
+    localStorage.setItem('cart', cartJson);
+    console.log('✅ Panier sauvegardé dans localStorage');
+    
     // Trigger cart update event
     const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    console.log('📢 Déclenchement événement cartUpdated, quantité totale:', totalQuantity);
     window.dispatchEvent(new CustomEvent('cartUpdated', {
-      detail: { count: totalQuantity }
+      detail: { count: totalQuantity, cart }
     }));
+    console.log('✅ Événement cartUpdated déclenché');
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde du panier:', error);
+    console.error('❌ ERREUR lors de la sauvegarde dans localStorage:', error);
+    console.error('  Type:', error.constructor.name);
+    console.error('  Message:', error.message);
+    console.error('  Stack:', error.stack);
   }
 }
 
@@ -236,15 +249,22 @@ export async function addToCart(item) {
       console.log('✅ Produit ajouté au panier');
     }
     
-    // Sauvegarder dans Supabase
+    // Sauvegarder dans Supabase (qui sauvegarde aussi dans localStorage en fallback)
+    console.log('💾 Début sauvegarde panier...');
     await saveCart(cart);
+    console.log('✅ Sauvegarde panier terminée');
     
-    // Déclencher l'événement pour mettre à jour l'UI
+    // Vérifier que le panier est bien dans localStorage
     if (typeof window !== 'undefined') {
-      const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-      window.dispatchEvent(new CustomEvent('cartUpdated', {
-        detail: { count: totalQuantity, cart }
-      }));
+      const storedCart = localStorage.getItem('cart');
+      if (storedCart) {
+        const parsedCart = JSON.parse(storedCart);
+        console.log('✅ Vérification: Panier présent dans localStorage, items:', parsedCart.length);
+      } else {
+        console.warn('⚠️ ATTENTION: Panier non trouvé dans localStorage après sauvegarde !');
+        // Réessayer la sauvegarde
+        saveCartToLocalStorage(cart);
+      }
     }
     
     console.log('✅ Panier mis à jour, total items:', cart.length);
