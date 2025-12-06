@@ -28,6 +28,8 @@ const nextConfig = {
       ],
       // Optimisation pour l'Italie : cache agressif des images
       minimumCacheTTL: 60,
+      // Désactiver l'optimisation d'images si sharp n'est pas disponible (fallback)
+      unoptimized: false, // sharp sera installé
     },
     // Optimisations de performance pour réduire la latence
     compress: true,
