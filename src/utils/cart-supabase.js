@@ -32,15 +32,34 @@ async function getUserId() {
     try {
       const userData = JSON.parse(user);
       // Pour les utilisateurs non authentifiés, utiliser l'email comme identifiant
-      const userId = userData.id || userData.email;
+      const email = userData.email;
+      if (email) {
+        // Sauvegarder l'email pour la synchronisation
+        localStorage.setItem('sync_email', email);
+        const userId = `email_${email.toLowerCase().trim()}`;
+        if (!sessionStorage.getItem('email_sync_info_shown')) {
+          console.log('📧 Synchronisation via email:', email);
+          console.log('✅ Le panier sera synchronisé entre tous les appareils utilisant cet email');
+          sessionStorage.setItem('email_sync_info_shown', 'true');
+        }
+        return userId;
+      }
+      // Si pas d'email mais un ID, l'utiliser
+      const userId = userData.id;
       if (userId) {
-        console.log('⚠️ Utilisateur non authentifié, ID basé sur email:', userId);
-        console.log('⚠️ Pour synchroniser entre appareils, utilisez le même email ou connectez-vous');
         return userId;
       }
     } catch (error) {
       console.warn('⚠️ Erreur parsing user:', error);
     }
+  }
+  
+  // Si aucun utilisateur, essayer d'utiliser un email de synchronisation
+  const syncEmail = localStorage.getItem('sync_email');
+  if (syncEmail && syncEmail.trim()) {
+    console.log('📧 Utilisation de l\'email de synchronisation:', syncEmail);
+    console.log('✅ Le panier sera synchronisé entre tous les appareils utilisant cet email');
+    return `email_${syncEmail.trim().toLowerCase()}`;
   }
   
   // Si aucun utilisateur, créer un ID temporaire basé sur le navigateur
@@ -50,10 +69,14 @@ async function getUserId() {
     guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('guest_id', guestId);
   }
-  console.warn('⚠️ Utilisateur invité, ID temporaire:', guestId);
-  console.warn('⚠️ ATTENTION: Cet ID est différent sur chaque appareil !');
-  console.warn('⚠️ Les données ne seront PAS synchronisées entre PC et téléphone');
-  console.warn('⚠️ Solution: Créez un compte ou utilisez le même email sur tous les appareils');
+  
+  // Afficher le warning seulement une fois par session
+  if (!sessionStorage.getItem('guest_warning_shown')) {
+    console.warn('⚠️ Utilisateur invité - Panier non synchronisé entre appareils');
+    console.warn('💡 Astuce: Utilisez le même email dans "Mon Compte" sur tous vos appareils pour synchroniser');
+    sessionStorage.setItem('guest_warning_shown', 'true');
+  }
+  
   return guestId;
 }
 
