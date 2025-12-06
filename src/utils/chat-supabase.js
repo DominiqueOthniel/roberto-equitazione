@@ -76,18 +76,13 @@ export async function getChatMessages() {
     else if (typeof userId === 'string' && userId.length > 20) {
       query = query.eq('user_id', userId);
     }
-    // Sinon, c'est un guest_id, on ne filtre pas (ou on filtre par user_email si on l'a stocké)
+    // Sinon, c'est un guest_id, utiliser le guest_id pour filtrer
     else {
-      // Pour les invités, on peut stocker l'email dans user_email si disponible
-      const syncEmail = localStorage.getItem('sync_email');
-      if (syncEmail) {
-        query = query.eq('user_email', syncEmail);
-      } else {
-        // Pas de filtre pour les invités sans email - ils verront tous les messages
-        // (ou on peut retourner un tableau vide pour la sécurité)
-        console.warn('⚠️ Utilisateur invité sans email - pas de synchronisation');
-        return getChatMessagesLocalStorage();
-      }
+      // Pour les invités, utiliser le guest_id pour filtrer les messages
+      // Cela permet aux invités de chatter même sans compte
+      console.log('👤 Utilisateur invité, utilisation du guest_id pour le chat');
+      // Stocker le guest_id dans user_email pour permettre la synchronisation
+      query = query.eq('user_email', userId);
     }
     
     const { data, error } = await query;
@@ -143,17 +138,31 @@ export async function getChatMessages() {
 export async function sendChatMessage(messageData) {
   const userId = await getUserId();
   
+  if (!userId) {
+    console.warn('⚠️ Pas d\'ID utilisateur, sauvegarde locale uniquement');
+    return saveChatMessageLocalStorage(messageData);
+  }
+  
   try {
-    console.log('📤 Envoi message dans Supabase:', messageData);
+    console.log('📤 Envoi message dans Supabase, user_id:', userId);
+    
+    // Déterminer si c'est un UUID (authentifié), un email, ou un guest_id
+    const isUUID = typeof userId === 'string' && userId.length > 20 && !userId.includes('@') && !userId.startsWith('guest_');
+    const isEmail = typeof userId === 'string' && userId.includes('@');
+    const isGuest = typeof userId === 'string' && userId.startsWith('guest_');
     
     const messageToInsert = {
       sender: messageData.sender || 'user',
       message: messageData.text || '',
       image_url: messageData.image || null,
-      user_id: typeof userId === 'string' && !userId.includes('@') && userId.startsWith('guest_') ? null : userId,
-      user_email: typeof userId === 'string' && userId.includes('@') ? userId : null,
+      // Si c'est un UUID authentifié, utiliser user_id
+      user_id: isUUID ? userId : null,
+      // Si c'est un email ou un guest_id, utiliser user_email pour la synchronisation
+      user_email: (isEmail || isGuest) ? userId : null,
       read: false,
     };
+    
+    console.log('📤 Message à insérer:', messageToInsert);
 
     const { data, error } = await supabase
       .from('chat_messages')
@@ -237,15 +246,34 @@ export async function subscribeToChatMessages(callback) {
 
   console.log('👂 Abonnement aux messages pour user_id:', userId);
 
+  // Déterminer le filtre selon le type d'utilisateur
+  const isUUID = typeof userId === 'string' && userId.length > 20 && !userId.includes('@') && !userId.startsWith('guest_');
+  const isEmail = typeof userId === 'string' && userId.includes('@');
+  const isGuest = typeof userId === 'string' && userId.startsWith('guest_');
+  
+  let filter;
+  if (isUUID) {
+    // Utilisateur authentifié avec UUID
+    filter = `user_id=eq.${userId}`;
+  } else if (isEmail || isGuest) {
+    // Utilisateur avec email ou invité - utiliser user_email
+    filter = `user_email=eq.${userId}`;
+  } else {
+    // Fallback
+    filter = `user_email=eq.${userId}`;
+  }
+
+  console.log('🔍 Filtre d\'abonnement:', filter);
+
   const channel = supabase
-    .channel('chat-messages')
+    .channel(`chat-messages-${userId}`)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'chat_messages',
-        filter: `user_id=eq.${userId}`,
+        filter: filter,
       },
       (payload) => {
         console.log('⚡️ Nouveau message en temps réel:', payload);
