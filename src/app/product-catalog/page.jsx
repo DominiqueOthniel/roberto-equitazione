@@ -282,6 +282,8 @@ export default function ProductCatalogPage() {
         setLoading(true);
         const productsData = await getProducts();
         
+        console.log('Produits chargés depuis Supabase:', productsData);
+        
         // Transformer les données Supabase au format attendu
         const formattedProducts = productsData.map(product => ({
           id: product.id,
@@ -298,14 +300,19 @@ export default function ProductCatalogPage() {
           material: product.material || ''
         }));
 
+        console.log('Produits formatés:', formattedProducts);
+
         if (formattedProducts.length > 0) {
           setProducts(formattedProducts);
+          console.log(`${formattedProducts.length} produits chargés depuis Supabase`);
         } else {
+          console.log('Aucun produit dans Supabase, utilisation des données de fallback');
           // Fallback vers les données statiques si Supabase est vide
           setProducts(fallbackProductsData);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des produits:', error);
+        console.error('Détails de l\'erreur:', error.message, error.stack);
         // Fallback vers les données statiques en cas d'erreur
         setProducts(fallbackProductsData);
       } finally {
