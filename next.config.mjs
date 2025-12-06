@@ -4,11 +4,6 @@ const nextConfig = {
     // output: 'standalone', // Désactivé temporairement pour utiliser server.js personnalisé
     productionBrowserSourceMaps: false, // Désactivé pour réduire la taille et éviter les problèmes de chunks
     distDir: process.env.DIST_DIR || '.next',
-    // S'assurer que les fichiers statiques sont correctement générés
-    generateBuildId: async () => {
-        // Utiliser un build ID basé sur la date pour éviter les problèmes de cache
-        return `build-${Date.now()}`;
-    },
     eslint: {
       ignoreDuringBuilds: true,
     },
