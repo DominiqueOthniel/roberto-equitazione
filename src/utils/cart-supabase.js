@@ -215,8 +215,15 @@ export async function getCart() {
 
 /**
  * Save cart (avec synchronisation Supabase)
+ * IMPORTANT: Sauvegarde toujours dans localStorage même si Supabase échoue
  */
 export async function saveCart(cart) {
+  console.log('💾 saveCart appelé avec', cart.length, 'items');
+  
+  // TOUJOURS sauvegarder dans localStorage d'abord (pour garantir la persistance)
+  saveCartToLocalStorage(cart);
+  
+  // Ensuite, essayer de sauvegarder dans Supabase (pour la synchronisation)
   await saveCartToSupabase(cart);
 }
 
