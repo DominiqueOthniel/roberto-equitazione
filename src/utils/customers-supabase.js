@@ -156,12 +156,27 @@ export async function getCustomers() {
 
     if (error) throw error;
 
+    // Mapper les données de Supabase (snake_case) vers le format frontend (camelCase)
+    const mappedCustomers = (data || []).map(customer => ({
+      id: customer.id,
+      name: customer.name || '',
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || null,
+      totalOrders: customer.total_orders || 0,
+      totalSpent: parseFloat(customer.total_spent || 0),
+      status: customer.status || 'Attivo',
+      lastOrder: customer.last_order ? new Date(customer.last_order).toLocaleDateString('it-IT') : null,
+      memberSince: customer.created_at ? new Date(customer.created_at).toLocaleDateString('it-IT') : null,
+      isVerified: customer.is_verified || false
+    }));
+
     // Cache local
     if (typeof window !== 'undefined') {
-      localStorage.setItem('customers', JSON.stringify(data || []));
+      localStorage.setItem('customers', JSON.stringify(mappedCustomers));
     }
 
-    return data || [];
+    return mappedCustomers;
   } catch (error) {
     console.error('Erreur lors de la récupération des clients:', error);
     // Fallback localStorage

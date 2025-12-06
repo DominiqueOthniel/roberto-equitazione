@@ -211,28 +211,48 @@ export async function saveCart(cart) {
  * Add item to cart (avec synchronisation)
  */
 export async function addToCart(item) {
-  const cart = await getCart();
+  console.log('🛒 Ajout au panier:', item);
   
-  // Check if item with same id and specs already exists
-  const existingItemIndex = cart.findIndex(
-    cartItem => 
-      cartItem.id === item.id && 
-      JSON.stringify(cartItem.specs || {}) === JSON.stringify(item.specs || {})
-  );
-  
-  if (existingItemIndex >= 0) {
-    // If exists, increase quantity
-    cart[existingItemIndex].quantity += (item.quantity || 1);
-  } else {
-    // If doesn't exist, add new item
-    cart.push({
-      ...item,
-      quantity: item.quantity || 1
-    });
+  try {
+    const cart = await getCart();
+    
+    // Check if item with same id and specs already exists
+    const existingItemIndex = cart.findIndex(
+      cartItem => 
+        cartItem.id === item.id && 
+        JSON.stringify(cartItem.specs || {}) === JSON.stringify(item.specs || {})
+    );
+    
+    if (existingItemIndex >= 0) {
+      // If exists, increase quantity
+      cart[existingItemIndex].quantity += (item.quantity || 1);
+      console.log('✅ Quantité mise à jour:', cart[existingItemIndex]);
+    } else {
+      // If doesn't exist, add new item
+      cart.push({
+        ...item,
+        quantity: item.quantity || 1
+      });
+      console.log('✅ Produit ajouté au panier');
+    }
+    
+    // Sauvegarder dans Supabase
+    await saveCart(cart);
+    
+    // Déclencher l'événement pour mettre à jour l'UI
+    if (typeof window !== 'undefined') {
+      const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      window.dispatchEvent(new CustomEvent('cartUpdated', {
+        detail: { count: totalQuantity, cart }
+      }));
+    }
+    
+    console.log('✅ Panier mis à jour, total items:', cart.length);
+    return cart;
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'ajout au panier:', error);
+    throw error;
   }
-  
-  await saveCart(cart);
-  return cart;
 }
 
 /**

@@ -414,7 +414,7 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-4 py-4 hidden lg:table-cell">
                       <p className="text-sm font-body font-semibold text-text-primary">
-                        €{customer.totalSpent.toLocaleString('it-IT')}
+                        €{(customer.totalSpent || 0).toLocaleString('it-IT')}
                       </p>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
@@ -542,7 +542,7 @@ export default function CustomersPage() {
                       <div className="bg-muted rounded-lg p-4">
                         <p className="text-xs text-text-secondary mb-1">Totale speso</p>
                         <p className="text-xl font-heading font-bold text-text-primary">
-                          €{selectedCustomer.totalSpent.toLocaleString('it-IT')}
+                          €{(selectedCustomer.totalSpent || 0).toLocaleString('it-IT')}
                         </p>
                       </div>
                       <div className="bg-muted rounded-lg p-4">
