@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import { createNotification } from '@/utils/notifications';
+import { getChatMessages, sendChatMessage, subscribeToChatMessages } from '@/utils/chat-supabase';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -50,71 +51,11 @@ export default function ChatWidget() {
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return;
 
-    // Charger les messages depuis localStorage au montage
-    const loadMessages = () => {
+    // Charger les messages depuis Supabase
+    const loadMessages = async () => {
       try {
-        const chatMessages = localStorage.getItem('chatMessages');
-        if (chatMessages) {
-          const allMessages = JSON.parse(chatMessages);
-          // Convertir les timestamps en Date
-          const formattedMessages = allMessages.map(msg => {
-            let timestamp;
-            if (msg.timestamp instanceof Date) {
-              timestamp = msg.timestamp;
-            } else if (msg.timestamp) {
-              timestamp = new Date(msg.timestamp);
-              // Si la conversion a échoué, utiliser la date actuelle
-              if (isNaN(timestamp.getTime())) {
-                timestamp = new Date();
-              }
-            } else {
-              timestamp = new Date();
-            }
-            return {
-              ...msg,
-              timestamp
-            };
-          });
-          // Trier par timestamp
-          formattedMessages.sort((a, b) => {
-            const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
-            const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
-            return timeA - timeB;
-          });
-          
-          // Si aucun message, ajouter le message de bienvenue
-          if (formattedMessages.length === 0) {
-            const welcomeDate = new Date();
-            const welcomeMessage = {
-              id: Date.now(),
-              sender: 'agent',
-              text: 'Ciao! Come posso aiutarti oggi con la selezione della tua sella?',
-              timestamp: welcomeDate,
-            };
-            formattedMessages.push(welcomeMessage);
-            // Sauvegarder le message de bienvenue avec timestamp en ISO string
-            localStorage.setItem('chatMessages', JSON.stringify([{
-              ...welcomeMessage,
-              timestamp: welcomeDate.toISOString()
-            }]));
-          }
-          
-          setMessages(formattedMessages);
-        } else {
-          // Premier message de bienvenue si aucun message sauvegardé
-          const welcomeDate = new Date();
-          const welcomeMessage = {
-            id: Date.now(),
-            sender: 'agent',
-            text: 'Ciao! Come posso aiutarti oggi con la selezione della tua sella?',
-            timestamp: welcomeDate,
-          };
-          setMessages([welcomeMessage]);
-          localStorage.setItem('chatMessages', JSON.stringify([{
-            ...welcomeMessage,
-            timestamp: welcomeDate.toISOString()
-          }]));
-        }
+        const messages = await getChatMessages();
+        setMessages(messages);
       } catch (error) {
         console.error('Erreur lors du chargement des messages:', error);
         // Message de bienvenue par défaut en cas d'erreur
@@ -141,28 +82,7 @@ export default function ChatWidget() {
           const exists = prev.some(m => m.id === adminMessage.id);
           if (exists) return prev;
           
-          const updated = [...prev, formattedMessage];
-          
-          // Sauvegarder dans localStorage
-          try {
-            const chatMessages = localStorage.getItem('chatMessages');
-            const allMessages = chatMessages ? JSON.parse(chatMessages) : [];
-            
-            // Vérifier si le message existe déjà dans localStorage
-            const existsInStorage = allMessages.some(m => m.id === adminMessage.id);
-            if (!existsInStorage) {
-              allMessages.push({
-                ...adminMessage,
-                timestamp: adminMessage.timestamp || new Date().toISOString()
-              });
-              const limited = allMessages.slice(-100);
-              localStorage.setItem('chatMessages', JSON.stringify(limited));
-            }
-          } catch (error) {
-            console.error('Erreur lors de la sauvegarde:', error);
-          }
-          
-          return updated;
+          return [...prev, formattedMessage];
         });
       }
     };
@@ -172,14 +92,31 @@ export default function ChatWidget() {
       setIsMinimized(false);
     };
 
+    // Charger les messages au montage
     loadMessages();
+
+    // S'abonner aux messages en temps réel
+    let subscription = null;
+    subscribeToChatMessages((newMessage) => {
+      setMessages(prev => {
+        // Vérifier si le message existe déjà
+        const exists = prev.some(m => m.id === newMessage.id);
+        if (exists) return prev;
+        return [...prev, newMessage];
+      });
+    }).then((channel) => {
+      subscription = channel;
+    });
+
+    // Écouter les événements personnalisés
     window.addEventListener('newAdminMessage', handleAdminMessage);
-    window.addEventListener('storage', loadMessages);
     window.addEventListener('openChat', handleOpenChat);
 
     return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
       window.removeEventListener('newAdminMessage', handleAdminMessage);
-      window.removeEventListener('storage', loadMessages);
       window.removeEventListener('openChat', handleOpenChat);
     };
   }, [mounted]);
@@ -193,43 +130,40 @@ export default function ChatWidget() {
     setIsMinimized(!isMinimized);
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue?.trim() || selectedImage) {
       const now = new Date();
       const newMessage = {
-        id: Date.now(),
+        id: Date.now(), // ID temporaire, sera remplacé par Supabase
         sender: 'user',
         text: inputValue?.trim(),
         image: imagePreview,
         timestamp: now,
       };
 
-      const messageToSave = {
-        ...newMessage,
-        timestamp: now.toISOString(),
-      };
+      // Ajouter immédiatement au state pour un feedback instantané
+      setMessages(prev => [...prev, newMessage]);
       
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      
-      // Sauvegarder les messages dans localStorage
+      // Envoyer à Supabase
       try {
-        const chatMessages = localStorage.getItem('chatMessages');
-        const allMessages = chatMessages ? JSON.parse(chatMessages) : [];
-        allMessages.push(messageToSave);
-        // Garder seulement les 100 derniers messages
-        const limited = allMessages.slice(-100);
-        localStorage.setItem('chatMessages', JSON.stringify(limited));
+        const savedMessage = await sendChatMessage(newMessage);
+        
+        // Remplacer le message temporaire par celui de Supabase
+        if (savedMessage && savedMessage.id !== newMessage.id) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === newMessage.id ? savedMessage : msg
+          ));
+        }
         
         // Créer une notification pour l'admin
         createNotification(
           'message',
           'Nouveau message',
           newMessage.text || 'Image partagée',
-          { messageId: messageToSave.id }
+          { messageId: savedMessage?.id || newMessage.id }
         );
       } catch (error) {
-        console.error('Erreur lors de la sauvegarde du message:', error);
+        console.error('Erreur lors de l\'envoi du message:', error);
       }
       
       setInputValue('');
