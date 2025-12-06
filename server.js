@@ -3,7 +3,7 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 
-const port = process.env.PORT || 1000;
+const port = parseInt(process.env.PORT || '1000', 10);
 const hostname = '0.0.0.0';
 
 const app = next({
