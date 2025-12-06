@@ -127,7 +127,7 @@ export default function CheckoutPage() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // Validate form data
     if (!formData.nome || !formData.cognome || !formData.via || !formData.numeroCivico || 
