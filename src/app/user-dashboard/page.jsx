@@ -132,20 +132,26 @@ export default function UserDashboardPage() {
 
     initializeProducts();
 
-    // Charger les commandes récentes
-    const loadRecentOrders = () => {
+    // Charger les commandes récentes depuis Supabase
+    const loadRecentOrders = async () => {
+      if (!user?.email) return;
+      
       try {
-        const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-        const userOrders = orders
+        const { getOrdersByCustomer } = await import('@/utils/orders-supabase');
+        const supabaseOrders = await getOrdersByCustomer(user.email);
+        
+        console.log('📥 [Dashboard] Commandes récentes chargées depuis Supabase:', supabaseOrders.length);
+        
+        const userOrders = supabaseOrders
           .filter(order => order.email?.toLowerCase() === user?.email?.toLowerCase())
           .sort((a, b) => {
-            const dateA = new Date(a.orderDate || a.date);
-            const dateB = new Date(b.orderDate || b.date);
+            const dateA = new Date(a.order_date || a.created_at);
+            const dateB = new Date(b.order_date || b.created_at);
             return dateB - dateA;
           })
           .slice(0, 5)
           .map(order => {
-            const orderDate = new Date(order.orderDate || order.date);
+            const orderDate = new Date(order.order_date || order.created_at);
             const statusMap = {
               'pending': { label: 'In attesa', color: 'brown' },
               'processing': { label: 'In elaborazione', color: 'brown' },
@@ -159,15 +165,57 @@ export default function UserDashboardPage() {
               id: order.id,
               date: orderDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }),
               items: order.items?.length || 0,
-              price: order.total || 0,
+              price: parseFloat(order.total || 0),
               status: statusInfo.label,
               statusColor: statusInfo.color
             };
           });
+        
         setRecentOrders(userOrders);
+        
+        // Mettre à jour localStorage comme cache
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('orders', JSON.stringify(supabaseOrders));
+        }
       } catch (error) {
-        console.error('Erreur lors du chargement des commandes:', error);
-        setRecentOrders([]);
+        console.error('❌ [Dashboard] Erreur lors du chargement des commandes récentes:', error);
+        // Fallback vers localStorage
+        try {
+          const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+          const userOrders = orders
+            .filter(order => order.email?.toLowerCase() === user?.email?.toLowerCase())
+            .sort((a, b) => {
+              const dateA = new Date(a.orderDate || a.date);
+              const dateB = new Date(b.orderDate || b.date);
+              return dateB - dateA;
+            })
+            .slice(0, 5)
+            .map(order => {
+              const orderDate = new Date(order.orderDate || order.date);
+              const statusMap = {
+                'pending': { label: 'In attesa', color: 'brown' },
+                'processing': { label: 'In elaborazione', color: 'brown' },
+                'shipped': { label: 'Spedito', color: 'brown' },
+                'delivered': { label: 'Consegnato', color: 'green' },
+                'cancelled': { label: 'Annullato', color: 'gray' }
+              };
+              const statusInfo = statusMap[order.status] || { label: order.status, color: 'brown' };
+              
+              return {
+                id: order.id,
+                date: orderDate.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                items: order.items?.length || 0,
+                price: order.total || order.price || 0,
+                status: statusInfo.label,
+                statusColor: statusInfo.color
+              };
+            });
+          
+          setRecentOrders(userOrders);
+        } catch (fallbackError) {
+          console.error('❌ [Dashboard] Erreur fallback localStorage:', fallbackError);
+          setRecentOrders([]);
+        }
       }
     };
 
