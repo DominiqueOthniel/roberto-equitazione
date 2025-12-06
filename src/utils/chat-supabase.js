@@ -65,6 +65,42 @@ async function getUserId() {
 }
 
 /**
+ * Get all chat messages (for admin - no filter)
+ */
+export async function getAllChatMessages() {
+  try {
+    console.log('📥 [Admin] Récupération de TOUS les messages depuis Supabase');
+    
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('❌ [Admin] Erreur lors de la récupération des messages:', error);
+      return [];
+    }
+
+    // Transformer les données Supabase au format attendu
+    const formattedMessages = (data || []).map(msg => ({
+      id: msg.id,
+      sender: msg.sender,
+      text: msg.message,
+      image: msg.image_url || null,
+      timestamp: new Date(msg.created_at),
+      user_email: msg.user_email,
+      user_id: msg.user_id,
+    }));
+
+    console.log('✅ [Admin] Messages récupérés:', formattedMessages.length);
+    return formattedMessages;
+  } catch (error) {
+    console.error('❌ [Admin] Erreur getAllChatMessages (exception):', error);
+    return [];
+  }
+}
+
+/**
  * Get chat messages from Supabase
  */
 export async function getChatMessages() {
@@ -245,6 +281,98 @@ async function createWelcomeMessage() {
   } catch (error) {
     console.warn('⚠️ Erreur createWelcomeMessage:', error);
     return null;
+  }
+}
+
+/**
+ * Subscribe to all chat messages (for admin - no filter)
+ */
+export async function subscribeToAllChatMessages(callback) {
+  console.log('👂 [Admin] Abonnement à TOUS les messages en temps réel');
+
+  const channel = supabase
+    .channel('chat-messages-admin')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'chat_messages',
+      },
+      (payload) => {
+        console.log('⚡️ [Admin] Nouveau message en temps réel:', payload);
+        if (payload.new) {
+          const formattedMessage = {
+            id: payload.new.id,
+            sender: payload.new.sender,
+            text: payload.new.message,
+            image: payload.new.image_url || null,
+            timestamp: new Date(payload.new.created_at),
+            user_email: payload.new.user_email,
+            user_id: payload.new.user_id,
+          };
+          callback(formattedMessage);
+        }
+      }
+    )
+    .subscribe();
+
+  return channel;
+}
+
+/**
+ * Send a reply message as admin
+ */
+export async function sendAdminReply(userEmail, messageText) {
+  try {
+    console.log('📤 [Admin] Envoi réponse admin à:', userEmail);
+    
+    const messageToInsert = {
+      sender: 'agent',
+      message: messageText,
+      image_url: null,
+      user_id: null,
+      user_email: userEmail, // Utiliser l'email du client pour que le message apparaisse dans sa conversation
+      read: false,
+    };
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert(messageToInsert)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ [Admin] Erreur lors de l\'envoi de la réponse:', error);
+      throw error;
+    }
+
+    console.log('✅ [Admin] Réponse envoyée avec succès:', data);
+
+    // Sauvegarder aussi dans localStorage comme cache
+    const formattedMessage = {
+      id: data.id,
+      sender: data.sender,
+      text: data.message,
+      image: data.image_url || null,
+      timestamp: new Date(data.created_at),
+      user_email: data.user_email,
+    };
+    
+    if (typeof window !== 'undefined') {
+      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+      messages.push(formattedMessage);
+      const limited = messages.slice(-100);
+      localStorage.setItem('chatMessages', JSON.stringify(limited));
+      
+      // Déclencher un événement pour mettre à jour le ChatWidget
+      window.dispatchEvent(new CustomEvent('newAdminMessage', { detail: formattedMessage }));
+    }
+
+    return formattedMessage;
+  } catch (error) {
+    console.error('❌ [Admin] Erreur sendAdminReply:', error);
+    throw error;
   }
 }
 

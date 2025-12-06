@@ -4,137 +4,127 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import Image from 'next/image';
+import { getAllChatMessages, subscribeToAllChatMessages, sendAdminReply } from '@/utils/chat-supabase';
 
-// Fonction pour charger les conversations depuis localStorage
-const loadConversationsFromStorage = () => {
+// Fonction pour charger les conversations depuis Supabase
+const loadConversationsFromSupabase = async () => {
   if (typeof window === 'undefined') return [];
   
   try {
-    const chatMessages = localStorage.getItem('chatMessages');
-    if (!chatMessages) return [];
+    console.log('📥 [Admin] Chargement conversations depuis Supabase...');
+    const allMessages = await getAllChatMessages();
     
-    const messages = JSON.parse(chatMessages);
-    if (!Array.isArray(messages) || messages.length === 0) return [];
-    
-    // Grouper les messages par session (utilisateur)
-    // Pour simplifier, on crée une conversation par utilisateur unique
-    const conversationsMap = new Map();
-    
-    // Récupérer les informations utilisateur depuis localStorage si disponible
-    let customerInfo = {
-      id: 1,
-      name: 'Client',
-      email: 'client@example.com',
-      avatar: null
-    };
-    
-    try {
-      const user = localStorage.getItem('user');
-      if (user) {
-        const userData = JSON.parse(user);
-        customerInfo = {
-          id: 1,
-          name: userData.name || `${userData.nome || ''} ${userData.cognome || ''}`.trim() || 'Client',
-          email: userData.email || 'client@example.com',
-          avatar: null
-        };
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des infos utilisateur:', error);
-    }
-    
-    const sessionId = 'default-user';
-    
-    // Créer la conversation si elle n'existe pas
-    if (!conversationsMap.has(sessionId)) {
-      conversationsMap.set(sessionId, {
-        id: sessionId,
-        customer: customerInfo,
-        subject: 'Conversation Chat',
-        status: 'open',
-        priority: 'normal',
-        unreadCount: 0,
-        lastMessage: null,
-        firstMessage: null,
-        messages: []
-      });
-    }
-    
-    const conversation = conversationsMap.get(sessionId);
-    
-    // Ajouter tous les messages
-    messages.forEach((msg, index) => {
-      const messageDate = msg.timestamp ? new Date(msg.timestamp) : new Date();
-      // Normaliser le sender : 'user' ou 'customer' devient 'customer' pour l'affichage admin
-      const normalizedSender = (msg.sender === 'user' || msg.sender === 'customer') ? 'customer' : msg.sender;
-      
-      conversation.messages.push({
-        id: msg.id || `msg-${Date.now()}-${index}`,
-        sender: normalizedSender,
-        text: msg.text || '',
-        image: msg.image || null,
-        timestamp: messageDate
-      });
-      
-      // Mettre à jour le premier message
-      if (!conversation.firstMessage || messageDate < conversation.firstMessage) {
-        conversation.firstMessage = messageDate;
-      }
-      
-      // Mettre à jour le dernier message (le plus récent)
-      if (!conversation.lastMessage || messageDate > conversation.lastMessage.timestamp) {
-        conversation.lastMessage = {
-          text: msg.text || (msg.image ? 'Image partagée' : 'Message'),
-          timestamp: messageDate,
-          sender: normalizedSender
-        };
-      }
-    });
-    
-    // Compter les messages non lus après le tri
-    // Un message est non lu si c'est un message du client et qu'il n'y a pas de réponse de l'agent après
-    conversation.unreadCount = 0;
-    let lastAgentMessageIndex = -1;
-    conversation.messages.forEach((msg, index) => {
-      if (msg.sender === 'agent') {
-        lastAgentMessageIndex = index;
-      }
-    });
-    
-    // Compter les messages du client après le dernier message de l'agent
-    if (lastAgentMessageIndex >= 0) {
-      conversation.unreadCount = conversation.messages
-        .slice(lastAgentMessageIndex + 1)
-        .filter(msg => msg.sender === 'customer').length;
-    } else {
-      // Si aucun message de l'agent, tous les messages du client sont non lus
-      conversation.unreadCount = conversation.messages.filter(msg => msg.sender === 'customer').length;
-    }
-    
-    // Trier les messages dans chaque conversation
-    conversation.messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    
-    // Réinitialiser le compteur de non lus si nécessaire
-    conversation.unreadCount = Math.max(0, conversation.unreadCount);
-    
-    // S'assurer qu'il y a au moins un message pour afficher la conversation
-    if (conversation.messages.length === 0) {
+    if (!Array.isArray(allMessages) || allMessages.length === 0) {
+      console.log('ℹ️ [Admin] Aucun message trouvé');
       return [];
     }
     
-    // S'assurer que lastMessage est défini
-    if (!conversation.lastMessage && conversation.messages.length > 0) {
-      const lastMsg = conversation.messages[conversation.messages.length - 1];
-      conversation.lastMessage = {
-        text: lastMsg.text || (lastMsg.image ? 'Image partagée' : 'Message'),
-        timestamp: lastMsg.timestamp,
-        sender: lastMsg.sender
-      };
+    // Grouper les messages par user_email (chaque email = une conversation)
+    const conversationsMap = new Map();
+    
+    // Récupérer les informations des clients depuis Supabase
+    const { getCustomers } = await import('@/utils/customers-supabase');
+    let customers = [];
+    try {
+      customers = await getCustomers();
+    } catch (error) {
+      console.warn('⚠️ [Admin] Erreur lors du chargement des clients:', error);
     }
     
-    return Array.from(conversationsMap.values());
+    // Créer un map des clients par email
+    const customersMap = new Map();
+    customers.forEach(customer => {
+      if (customer.email) {
+        customersMap.set(customer.email.toLowerCase(), customer);
+      }
+    });
+    
+    // Grouper les messages par user_email
+    allMessages.forEach((msg) => {
+      const userEmail = msg.user_email || 'guest';
+      const normalizedEmail = userEmail.toLowerCase();
+      
+      // Récupérer les infos du client
+      const customer = customersMap.get(normalizedEmail) || {
+        id: normalizedEmail,
+        name: normalizedEmail.includes('@') ? normalizedEmail.split('@')[0] : 'Client',
+        email: normalizedEmail,
+        avatar: null
+      };
+      
+      // Créer la conversation si elle n'existe pas
+      if (!conversationsMap.has(normalizedEmail)) {
+        conversationsMap.set(normalizedEmail, {
+          id: normalizedEmail,
+          customer: {
+            id: customer.id || normalizedEmail,
+            name: customer.name || customer.email || 'Client',
+            email: customer.email || normalizedEmail,
+            avatar: null
+          },
+          subject: 'Conversation Chat',
+          status: 'open',
+          priority: 'normal',
+          unreadCount: 0,
+          lastMessage: null,
+          firstMessage: null,
+          messages: []
+        });
+      }
+      
+      const conversation = conversationsMap.get(normalizedEmail);
+      
+      // Normaliser le sender : 'user' devient 'customer' pour l'affichage admin
+      const normalizedSender = (msg.sender === 'user' || msg.sender === 'customer') ? 'customer' : msg.sender;
+      
+      conversation.messages.push({
+        id: msg.id,
+        sender: normalizedSender,
+        text: msg.text || '',
+        image: msg.image || null,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
+      });
+    });
+    
+    // Traiter chaque conversation
+    conversationsMap.forEach((conversation) => {
+      // Trier les messages par date
+      conversation.messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      
+      // Trouver le premier et dernier message
+      if (conversation.messages.length > 0) {
+        conversation.firstMessage = conversation.messages[0].timestamp;
+        const lastMsg = conversation.messages[conversation.messages.length - 1];
+        conversation.lastMessage = {
+          text: lastMsg.text || (lastMsg.image ? 'Image partagée' : 'Message'),
+          timestamp: lastMsg.timestamp,
+          sender: lastMsg.sender
+        };
+      }
+      
+      // Compter les messages non lus
+      conversation.unreadCount = 0;
+      let lastAgentMessageIndex = -1;
+      conversation.messages.forEach((msg, index) => {
+        if (msg.sender === 'agent') {
+          lastAgentMessageIndex = index;
+        }
+      });
+      
+      if (lastAgentMessageIndex >= 0) {
+        conversation.unreadCount = conversation.messages
+          .slice(lastAgentMessageIndex + 1)
+          .filter(msg => msg.sender === 'customer').length;
+      } else {
+        conversation.unreadCount = conversation.messages.filter(msg => msg.sender === 'customer').length;
+      }
+    });
+    
+    const conversations = Array.from(conversationsMap.values());
+    console.log('✅ [Admin] Conversations chargées:', conversations.length);
+    return conversations;
   } catch (error) {
-    console.error('Erreur lors du chargement des conversations:', error);
+    console.error('❌ [Admin] Erreur lors du chargement des conversations:', error);
     return [];
   }
 };
@@ -393,32 +383,30 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     loadConversations();
     
-    // Écouter les nouveaux messages
-    const handleNewMessage = () => {
+    // S'abonner aux nouveaux messages en temps réel
+    let subscription = null;
+    subscribeToAllChatMessages((newMessage) => {
+      console.log('⚡️ [Admin] Nouveau message reçu:', newMessage);
+      // Recharger les conversations quand un nouveau message arrive
       loadConversations();
-    };
+    }).then((channel) => {
+      subscription = channel;
+    });
     
-    const handleStorageChange = () => {
-      loadConversations();
-    };
-    
-    window.addEventListener('newMessage', handleNewMessage);
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Vérifier périodiquement les nouveaux messages
-    const interval = setInterval(loadConversations, 3000);
+    // Vérifier périodiquement les nouveaux messages (fallback)
+    const interval = setInterval(loadConversations, 5000);
     
     return () => {
-      window.removeEventListener('newMessage', handleNewMessage);
-      window.removeEventListener('storage', handleStorageChange);
+      if (subscription) {
+        subscription.unsubscribe();
+      }
       clearInterval(interval);
     };
   }, []);
 
-  const loadConversations = () => {
-    const loaded = loadConversationsFromStorage();
+  const loadConversations = async () => {
+    const loaded = await loadConversationsFromSupabase();
     
-    // Toujours afficher les conversations chargées, même si elles sont vides
     if (loaded.length > 0) {
       setConversations(loaded);
       
@@ -438,29 +426,8 @@ export default function AdminMessagesPage() {
         }
       }
     } else {
-      // Vérifier s'il y a des messages dans localStorage
-      try {
-        const chatMessages = localStorage.getItem('chatMessages');
-        if (chatMessages) {
-          const messages = JSON.parse(chatMessages);
-          if (messages && messages.length > 0) {
-            // Recharger avec les messages trouvés
-            const reloaded = loadConversationsFromStorage();
-            if (reloaded.length > 0) {
-              setConversations(reloaded);
-              if (!selectedConversation) {
-                setSelectedConversation(reloaded[0]);
-              }
-              return;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Erreur lors de la vérification des messages:', error);
-      }
-      
-      // Utiliser les données d'exemple si aucune conversation réelle
-      setConversations(exampleConversationsData);
+      // Aucune conversation trouvée
+      setConversations([]);
     }
   };
 
@@ -515,68 +482,28 @@ export default function AdminMessagesPage() {
     });
   };
 
-  const handleSendReply = () => {
+  const handleSendReply = async () => {
     if (!replyText.trim() || !selectedConversation) return;
 
     setIsTyping(true);
     
-    const newMessage = {
-      id: Date.now(),
-      sender: 'agent',
-      text: replyText,
-      timestamp: new Date().toISOString(),
-      attachments: []
-    };
-
-    // Sauvegarder le message dans localStorage
     try {
-      const chatMessages = localStorage.getItem('chatMessages');
-      const allMessages = chatMessages ? JSON.parse(chatMessages) : [];
+      // Envoyer le message via Supabase
+      const userEmail = selectedConversation.customer.email;
+      const savedMessage = await sendAdminReply(userEmail, replyText);
       
-      // S'assurer que le message a le bon format
-      const messageToSave = {
-        ...newMessage,
-        timestamp: newMessage.timestamp || new Date().toISOString(),
-      };
+      console.log('✅ [Admin] Réponse envoyée:', savedMessage);
       
-      allMessages.push(messageToSave);
-      // Garder seulement les 100 derniers messages
-      const limited = allMessages.slice(-100);
-      localStorage.setItem('chatMessages', JSON.stringify(limited));
+      // Recharger les conversations pour avoir les données à jour
+      await loadConversations();
       
-      // Déclencher un événement pour mettre à jour le ChatWidget
-      window.dispatchEvent(new CustomEvent('newAdminMessage', { detail: messageToSave }));
-      
-      // Déclencher aussi un événement storage pour synchronisation multi-onglets
-      window.dispatchEvent(new Event('storage'));
+      setReplyText('');
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du message:', error);
+      console.error('❌ [Admin] Erreur lors de l\'envoi de la réponse:', error);
+      alert('Errore durante l\'invio della risposta. Riprova.');
+    } finally {
+      setIsTyping(false);
     }
-
-    // Mettre à jour la conversation sélectionnée
-    const updatedConversation = {
-      ...selectedConversation,
-      messages: [...selectedConversation.messages, {
-        ...newMessage,
-        timestamp: new Date(newMessage.timestamp)
-      }],
-      unreadCount: 0,
-      lastMessage: {
-        text: replyText,
-        timestamp: new Date(),
-        sender: 'agent'
-      }
-    };
-    
-    setSelectedConversation(updatedConversation);
-    
-    // Mettre à jour la liste des conversations
-    setConversations(prev => 
-      prev.map(c => c.id === selectedConversation.id ? updatedConversation : c)
-    );
-
-    setReplyText('');
-    setIsTyping(false);
   };
 
   const getStatusColor = (status) => {
