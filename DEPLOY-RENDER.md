@@ -35,11 +35,21 @@ Render utilisera automatiquement `render.yaml`, mais vous pouvez aussi configure
 
 ### 4. Variables d'environnement
 
-Dans Render Dashboard → Environment, ajoutez :
+**Pour le développement local**, créez un fichier `.env.local` à la racine du projet :
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=votre-anon-key
+PORT=1000
+NODE_ENV=development
+```
+
+**Pour Render**, dans Render Dashboard → Environment, ajoutez :
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre-anon-key
+PORT=1000
 NODE_ENV=production
 ```
 
