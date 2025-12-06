@@ -74,16 +74,23 @@ export async function getOrders() {
  */
 export async function getOrdersByCustomer(email) {
   try {
+    console.log('📥 Récupération commandes pour email:', email);
+    
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .eq('customer_email', email)
+      .eq('email', email) // Utiliser 'email' au lieu de 'customer_email'
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Erreur Supabase:', error);
+      throw error;
+    }
+    
+    console.log('✅ Commandes récupérées:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Erreur lors de la récupération des commandes:', error);
+    console.error('❌ Erreur lors de la récupération des commandes:', error);
     return getOrdersByCustomerLocalStorage(email);
   }
 }

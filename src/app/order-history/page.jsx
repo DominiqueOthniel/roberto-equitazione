@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
+import { getOrdersByCustomer } from '@/utils/orders-supabase';
 
 export default function OrderHistoryPage() {
   const router = useRouter();
@@ -56,44 +57,43 @@ export default function OrderHistoryPage() {
     };
   }, [router, user]);
 
-  const loadOrders = (userEmail) => {
+  const loadOrders = async (userEmail) => {
     if (typeof window === 'undefined') return;
     
     try {
-      const storedOrders = localStorage.getItem('orders');
-      let allOrders = storedOrders ? JSON.parse(storedOrders) : [];
+      setLoading(true);
+      console.log('📥 Chargement des commandes pour:', userEmail);
       
-      // Vérifier aussi currentOrder (commande récente depuis checkout) si elle n'a pas encore été ajoutée
-      const currentOrder = localStorage.getItem('currentOrder');
-      if (currentOrder) {
-        try {
-          const orderData = JSON.parse(currentOrder);
-          if (orderData.id && orderData.email?.toLowerCase() === userEmail?.toLowerCase()) {
-            const exists = allOrders.some(o => o.id === orderData.id);
-            if (!exists) {
-              allOrders.unshift(orderData);
-            }
-          }
-        } catch (error) {
-          // Ignorer les erreurs de parsing
-        }
-      }
+      // Charger depuis Supabase
+      const supabaseOrders = await getOrdersByCustomer(userEmail);
+      console.log('✅ Commandes récupérées depuis Supabase:', supabaseOrders.length);
       
-      // Filtrer les commandes pour l'utilisateur connecté
-      const userOrders = allOrders.filter(order => 
-        order.email?.toLowerCase() === userEmail?.toLowerCase()
-      );
+      // Transformer les données Supabase au format attendu
+      const formattedOrders = supabaseOrders.map(order => ({
+        id: order.id,
+        email: order.email,
+        nome: order.nome,
+        cognome: order.cognome,
+        telefono: order.telefono,
+        total: parseFloat(order.total || 0),
+        subtotal: parseFloat(order.subtotal || order.total || 0),
+        status: order.status || 'pending',
+        shippingAddress: order.shipping_address || {},
+        items: order.items || [],
+        orderDate: order.order_date || order.created_at,
+        date: order.order_date || order.created_at,
+      }));
       
       // Trier par date (plus récentes en premier)
-      userOrders.sort((a, b) => {
+      formattedOrders.sort((a, b) => {
         const dateA = new Date(a.orderDate || a.date);
         const dateB = new Date(b.orderDate || b.date);
         return dateB - dateA;
       });
       
-      setOrders(userOrders);
+      setOrders(formattedOrders);
     } catch (error) {
-      console.error('Erreur lors du chargement des commandes:', error);
+      console.error('❌ Erreur lors du chargement des commandes:', error);
       setOrders([]);
     } finally {
       setLoading(false);

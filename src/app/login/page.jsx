@@ -205,6 +205,7 @@ export default function LoginPage() {
                       value={formData.cognome}
                       onChange={handleInputChange}
                       required
+                      autoComplete="family-name"
                       className="w-full px-4 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -213,14 +214,15 @@ export default function LoginPage() {
                   <label htmlFor="telefono" className="block text-sm font-body font-semibold text-text-primary mb-2">
                     Telefono
                   </label>
-                  <input
-                    type="tel"
-                    id="telefono"
-                    name="telefono"
-                    value={formData.telefono}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                    <input
+                      type="tel"
+                      id="telefono"
+                      name="telefono"
+                      value={formData.telefono}
+                      onChange={handleInputChange}
+                      autoComplete="tel"
+                      className="w-full px-4 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
                 </div>
               </>
             )}
@@ -254,6 +256,7 @@ export default function LoginPage() {
                 onChange={handleInputChange}
                 required={isNewUser}
                 minLength={isNewUser ? 6 : 0}
+                autoComplete={isNewUser ? "new-password" : "current-password"}
                 className="w-full px-4 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder={isNewUser ? "Minimo 6 caratteri" : "Inserisci la tua password"}
               />
