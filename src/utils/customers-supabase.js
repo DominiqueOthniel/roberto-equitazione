@@ -67,15 +67,23 @@ export async function registerCustomer(userData) {
       is_verified: userData.isVerified || false,
     };
 
+    console.log('Enregistrement client dans Supabase:', customerData);
+
     // Vérifier si le client existe déjà
-    const { data: existing } = await supabase
+    const { data: existing, error: checkError } = await supabase
       .from('customers')
       .select('*')
       .eq('email', customerData.email)
-      .single();
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Erreur lors de la vérification du client:', checkError);
+      throw checkError;
+    }
 
     let result;
     if (existing) {
+      console.log('Client existant trouvé, mise à jour...');
       // Mettre à jour
       const { data, error } = await supabase
         .from('customers')
@@ -87,9 +95,15 @@ export async function registerCustomer(userData) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur lors de la mise à jour du client:', error);
+        console.error('Détails:', error.message, error.details, error.hint);
+        throw error;
+      }
       result = data;
+      console.log('Client mis à jour avec succès:', result);
     } else {
+      console.log('Nouveau client, création...');
       // Créer nouveau
       const { data, error } = await supabase
         .from('customers')
@@ -97,8 +111,13 @@ export async function registerCustomer(userData) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur lors de la création du client:', error);
+        console.error('Détails:', error.message, error.details, error.hint);
+        throw error;
+      }
       result = data;
+      console.log('Client créé avec succès:', result);
     }
 
     // Cache local

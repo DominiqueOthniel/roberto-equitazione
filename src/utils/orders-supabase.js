@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 
 /**
  * Get user ID from localStorage or Supabase session
+ * Returns a string identifier (UUID for authenticated users, email for guests)
  */
 async function getUserId() {
   if (typeof window === 'undefined') return null;
@@ -13,6 +14,7 @@ async function getUserId() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
+      console.log('Utilisateur authentifié via Supabase:', session.user.id);
       return session.user.id;
     }
   } catch (error) {
@@ -23,13 +25,24 @@ async function getUserId() {
   if (user) {
     try {
       const userData = JSON.parse(user);
-      return userData.id || userData.email;
-    } catch {
-      return null;
+      const userId = userData.id || userData.email;
+      if (userId) {
+        console.log('Utilisateur non authentifié, ID:', userId);
+        return userId;
+      }
+    } catch (error) {
+      console.warn('Erreur parsing user:', error);
     }
   }
   
-  return null;
+  // Si aucun utilisateur, créer un ID temporaire basé sur le navigateur
+  let guestId = localStorage.getItem('guest_id');
+  if (!guestId) {
+    guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('guest_id', guestId);
+  }
+  console.log('Utilisateur invité, ID:', guestId);
+  return guestId;
 }
 
 /**
@@ -101,12 +114,24 @@ export async function createOrder(orderData) {
   try {
     const userId = await getUserId();
     
+    // Mapper les données au format de la table Supabase
     const order = {
-      ...orderData,
       user_id: userId,
+      email: orderData.customer_email || orderData.email || '',
+      nome: orderData.customer_name?.split(' ')[0] || orderData.nome || '',
+      cognome: orderData.customer_name?.split(' ').slice(1).join(' ') || orderData.cognome || '',
+      telefono: orderData.customer_phone || orderData.telefono || '',
+      total: parseFloat(orderData.total) || 0,
+      subtotal: orderData.subtotal ? parseFloat(orderData.subtotal) : parseFloat(orderData.total) || 0,
+      status: orderData.status || 'pending',
+      shipping_address: orderData.shipping_address || orderData.shippingAddress || {},
+      items: orderData.items || [],
+      order_date: new Date().toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    console.log('Création commande dans Supabase:', order);
 
     const { data, error } = await supabase
       .from('orders')
@@ -114,7 +139,13 @@ export async function createOrder(orderData) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur Supabase lors de la création de la commande:', error);
+      console.error('Détails:', error.message, error.details, error.hint);
+      throw error;
+    }
+
+    console.log('Commande créée avec succès:', data);
 
     // Mettre à jour le cache
     if (typeof window !== 'undefined') {
@@ -127,6 +158,8 @@ export async function createOrder(orderData) {
     return data;
   } catch (error) {
     console.error('Erreur lors de la création de la commande:', error);
+    console.error('Stack:', error.stack);
+    // Fallback vers localStorage
     return createOrderLocalStorage(orderData);
   }
 }

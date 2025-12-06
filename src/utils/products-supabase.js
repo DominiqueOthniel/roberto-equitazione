@@ -52,13 +52,21 @@ export async function getProductById(id) {
  */
 export async function createProduct(productData) {
   try {
+    console.log('Création produit dans Supabase:', productData);
+    
     const { data, error } = await supabase
       .from('products')
       .insert(productData)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur Supabase lors de la création du produit:', error);
+      console.error('Détails:', error.message, error.details, error.hint);
+      throw error;
+    }
+
+    console.log('Produit créé avec succès:', data);
 
     // Mettre à jour le cache
     if (typeof window !== 'undefined') {
@@ -70,6 +78,7 @@ export async function createProduct(productData) {
     return data;
   } catch (error) {
     console.error('Erreur lors de la création du produit:', error);
+    console.error('Stack:', error.stack);
     return createProductLocalStorage(productData);
   }
 }
@@ -79,6 +88,8 @@ export async function createProduct(productData) {
  */
 export async function updateProduct(id, productData) {
   try {
+    console.log('Mise à jour produit dans Supabase:', id, productData);
+    
     const { data, error } = await supabase
       .from('products')
       .update({
@@ -89,7 +100,13 @@ export async function updateProduct(id, productData) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur Supabase lors de la mise à jour du produit:', error);
+      console.error('Détails:', error.message, error.details, error.hint);
+      throw error;
+    }
+
+    console.log('Produit mis à jour avec succès:', data);
 
     // Mettre à jour le cache
     if (typeof window !== 'undefined') {

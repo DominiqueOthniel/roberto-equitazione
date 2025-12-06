@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 
 /**
  * Get user ID from localStorage or Supabase session
+ * Returns a string identifier (UUID for authenticated users, email for guests)
  */
 async function getUserId() {
   if (typeof window === 'undefined') return null;
@@ -15,24 +16,37 @@ async function getUserId() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
+      console.log('Utilisateur authentifié via Supabase:', session.user.id);
       return session.user.id;
     }
   } catch (error) {
     console.warn('Erreur getSession:', error);
   }
   
-  // Fallback: utiliser localStorage user
+  // Fallback: utiliser localStorage user (utilisateurs non authentifiés)
   const user = localStorage.getItem('user');
   if (user) {
     try {
       const userData = JSON.parse(user);
-      return userData.id || userData.email; // Utiliser email comme ID temporaire
-    } catch {
-      return null;
+      // Pour les utilisateurs non authentifiés, utiliser l'email comme identifiant
+      const userId = userData.id || userData.email;
+      if (userId) {
+        console.log('Utilisateur non authentifié, ID:', userId);
+        return userId;
+      }
+    } catch (error) {
+      console.warn('Erreur parsing user:', error);
     }
   }
   
-  return null;
+  // Si aucun utilisateur, créer un ID temporaire basé sur le navigateur
+  let guestId = localStorage.getItem('guest_id');
+  if (!guestId) {
+    guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('guest_id', guestId);
+  }
+  console.log('Utilisateur invité, ID:', guestId);
+  return guestId;
 }
 
 /**
@@ -85,13 +99,16 @@ function getCartFromLocalStorage() {
 export async function saveCartToSupabase(cart) {
   const userId = await getUserId();
   if (!userId) {
+    console.log('Pas d\'utilisateur, sauvegarde dans localStorage uniquement');
     // Si pas d'utilisateur, sauvegarder seulement dans localStorage
     saveCartToLocalStorage(cart);
     return;
   }
 
   try {
-    const { error } = await supabase
+    console.log('Sauvegarde panier dans Supabase pour user:', userId, 'items:', cart.length);
+    
+    const { data, error } = await supabase
       .from('user_carts')
       .upsert({
         user_id: userId,
@@ -99,18 +116,22 @@ export async function saveCartToSupabase(cart) {
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id'
-      });
+      })
+      .select();
 
     if (error) {
       console.error('Erreur lors de la sauvegarde du panier:', error);
+      console.error('Détails:', error.message, error.details, error.hint);
       // Fallback: sauvegarder dans localStorage
       saveCartToLocalStorage(cart);
     } else {
+      console.log('Panier sauvegardé avec succès dans Supabase:', data);
       // Sauvegarder aussi dans localStorage comme cache
       saveCartToLocalStorage(cart);
     }
   } catch (error) {
     console.error('Erreur saveCartToSupabase:', error);
+    console.error('Stack:', error.stack);
     saveCartToLocalStorage(cart); // Fallback
   }
 }
