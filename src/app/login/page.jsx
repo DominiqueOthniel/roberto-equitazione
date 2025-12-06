@@ -74,6 +74,12 @@ export default function LoginPage() {
 
         // Sauvegarder l'utilisateur dans localStorage
         localStorage.setItem('user', JSON.stringify(newUser));
+        
+        // Sauvegarder l'email pour la synchronisation entre appareils
+        if (newUser.email) {
+          localStorage.setItem('sync_email', newUser.email.trim().toLowerCase());
+          console.log('✅ Email de synchronisation sauvegardé:', newUser.email);
+        }
 
         // Enregistrer automatiquement le client dans la base de données admin
         const customerData = registerCustomer(newUser);
