@@ -74,17 +74,17 @@ export default function ProductCatalogPage() {
         return false;
       }
       
-      // Filter by type
+      // Filter by type - seulement si des types sont sélectionnés
       if (filters.types && filters.types.length > 0 && !filters.types.includes(product.type)) {
         return false;
       }
       
-      // Filter by size
+      // Filter by size - seulement si des tailles sont sélectionnées
       if (filters.sizes && filters.sizes.length > 0 && !filters.sizes.includes(product.size)) {
         return false;
       }
       
-      // Filter by material
+      // Filter by material - seulement si des matériaux sont sélectionnés
       if (filters.materials && filters.materials.length > 0 && !filters.materials.includes(product.material)) {
         return false;
       }
@@ -112,7 +112,7 @@ export default function ProductCatalogPage() {
     }
 
     return filtered;
-  }, [filters, sortBy]);
+  }, [products, filters, sortBy]);
 
   // S'assurer que displayedCount ne dépasse pas le nombre de produits disponibles
   const actualDisplayedCount = Math.min(displayedCount, filteredProducts.length);

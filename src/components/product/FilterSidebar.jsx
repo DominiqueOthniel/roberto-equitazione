@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function FilterSidebar({ filters, onFilterChange }) {
-  const [activeFilters, setActiveFilters] = useState({
+  // Utiliser les filtres passés en props comme état initial
+  const [activeFilters, setActiveFilters] = useState(filters || {
     priceRange: [0, 10000],
     types: [],
     sizes: [],
     materials: []
   });
+
+  // Synchroniser avec les props quand elles changent
+  useEffect(() => {
+    if (filters) {
+      setActiveFilters(filters);
+    }
+  }, [filters]);
 
   const types = ['Dressage', 'Salto Ostacoli', 'Uso Generale', 'Endurance', 'Western', 'Completo'];
   const sizes = ['16', '16.5', '17', '17.5', '18', '18.5'];
