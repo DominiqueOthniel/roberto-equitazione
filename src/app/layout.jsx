@@ -7,7 +7,12 @@ import ConditionalFooter from '@/components/common/ConditionalFooter';
 export const metadata = {
   title: 'Roberto Equitazione',
   description: 'Site de vente d\'équipements équestres',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }) {
