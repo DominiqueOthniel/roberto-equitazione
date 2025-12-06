@@ -3,7 +3,7 @@ services:
     name: roberto-equitazione
     env: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --production=false && npm run build
     startCommand: node .next/standalone/server.js
     envVars:
       - key: NODE_ENV
