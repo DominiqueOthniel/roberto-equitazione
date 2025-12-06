@@ -221,15 +221,15 @@ export default function CustomersPage() {
   const stats = useMemo(() => {
     const total = customersData.length;
     const active = customersData.filter(c => c.status === 'Actif' || c.status === 'VIP').length;
-    const totalRevenue = customersData.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
-    const totalOrders = customersData.reduce((sum, c) => sum + (c.totalOrders || 0), 0);
+    const totalRevenue = customersData.reduce((sum, c) => sum + (parseFloat(c.totalSpent) || 0), 0);
+    const totalOrders = customersData.reduce((sum, c) => sum + (parseInt(c.totalOrders) || 0), 0);
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     return {
-      total,
-      active,
-      totalRevenue,
-      avgOrderValue
+      total: total || 0,
+      active: active || 0,
+      totalRevenue: totalRevenue || 0,
+      avgOrderValue: avgOrderValue || 0
     };
   }, [customersData]);
 
@@ -281,13 +281,13 @@ export default function CustomersPage() {
             <div className="bg-card border border-border rounded-lg p-4">
               <p className="text-xs sm:text-sm text-text-secondary mb-1">Ricavi Totali</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-text-primary">
-                €{stats.totalRevenue.toLocaleString('it-IT')}
+                €{(stats?.totalRevenue || 0).toLocaleString('it-IT')}
               </p>
             </div>
             <div className="bg-card border border-border rounded-lg p-4">
               <p className="text-xs sm:text-sm text-text-secondary mb-1">Carrello Medio</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-text-primary">
-                €{Math.round(stats.avgOrderValue).toLocaleString('it-IT')}
+                €{Math.round(stats?.avgOrderValue || 0).toLocaleString('it-IT')}
               </p>
             </div>
           </div>
@@ -370,8 +370,8 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-muted/50 transition-fast">
+                {filteredCustomers.filter(customer => customer).map((customer) => (
+                  <tr key={customer?.id || Math.random()} className="hover:bg-muted/50 transition-fast">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -414,7 +414,7 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-4 py-4 hidden lg:table-cell">
                       <p className="text-sm font-body font-semibold text-text-primary">
-                        €{(customer.totalSpent || 0).toLocaleString('it-IT')}
+                        €{(customer?.totalSpent || 0).toLocaleString('it-IT')}
                       </p>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
@@ -542,7 +542,7 @@ export default function CustomersPage() {
                       <div className="bg-muted rounded-lg p-4">
                         <p className="text-xs text-text-secondary mb-1">Totale speso</p>
                         <p className="text-xl font-heading font-bold text-text-primary">
-                          €{(selectedCustomer.totalSpent || 0).toLocaleString('it-IT')}
+                          €{(selectedCustomer?.totalSpent || 0).toLocaleString('it-IT')}
                         </p>
                       </div>
                       <div className="bg-muted rounded-lg p-4">
