@@ -62,11 +62,35 @@ export async function getChatMessages() {
   try {
     console.log('📥 Récupération messages depuis Supabase, user_id:', userId);
     
-    const { data, error } = await supabase
+    // Construire la requête selon le type d'utilisateur
+    let query = supabase
       .from('chat_messages')
       .select('*')
-      .or(`user_id.eq.${userId},user_email.eq.${typeof userId === 'string' && userId.includes('@') ? userId : null}`)
       .order('created_at', { ascending: true });
+    
+    // Si c'est un email, filtrer par user_email
+    if (typeof userId === 'string' && userId.includes('@')) {
+      query = query.eq('user_email', userId);
+    } 
+    // Si c'est un UUID (authentifié), filtrer par user_id
+    else if (typeof userId === 'string' && userId.length > 20) {
+      query = query.eq('user_id', userId);
+    }
+    // Sinon, c'est un guest_id, on ne filtre pas (ou on filtre par user_email si on l'a stocké)
+    else {
+      // Pour les invités, on peut stocker l'email dans user_email si disponible
+      const syncEmail = localStorage.getItem('sync_email');
+      if (syncEmail) {
+        query = query.eq('user_email', syncEmail);
+      } else {
+        // Pas de filtre pour les invités sans email - ils verront tous les messages
+        // (ou on peut retourner un tableau vide pour la sécurité)
+        console.warn('⚠️ Utilisateur invité sans email - pas de synchronisation');
+        return getChatMessagesLocalStorage();
+      }
+    }
+    
+    const { data, error } = await query;
 
     if (error) {
       console.error('❌ Erreur lors de la récupération des messages:', error);
