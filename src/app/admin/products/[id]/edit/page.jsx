@@ -150,7 +150,9 @@ export default function EditProductPage() {
       }
     } catch (error) {
       console.error('❌ Erreur upload image:', error);
-      alert('Errore durante l\'upload dell\'immagine. Riprova.');
+      const errorMessage = error.message || 'Erreur inconnue lors de l\'upload';
+      console.error('❌ Détails erreur:', error);
+      alert(`Errore durante l'upload dell'immagine:\n\n${errorMessage}\n\nVérifiez la console pour plus de détails.`);
     } finally {
       setUploadingImage(false);
     }

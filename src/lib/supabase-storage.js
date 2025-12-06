@@ -122,7 +122,25 @@ export async function getThumbnailUrl(bucket, path, width = 300, height = 300) {
  */
 export async function uploadFile(bucket, path, file, options = {}) {
   try {
-    console.log('📤 Upload fichier:', { bucket, path, fileName: file.name, size: file.size });
+    console.log('📤 Upload fichier:', { bucket, path, fileName: file.name, size: file.size, type: file.type });
+    
+    // Vérifier que le bucket existe (optionnel, mais utile pour le debug)
+    try {
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      if (listError) {
+        console.warn('⚠️ Impossible de lister les buckets:', listError);
+      } else {
+        const bucketExists = buckets?.some(b => b.name === bucket);
+        if (!bucketExists) {
+          console.error('❌ Le bucket n\'existe pas:', bucket);
+          throw new Error(`Le bucket "${bucket}" n'existe pas dans Supabase Storage. Veuillez le créer dans le dashboard Supabase.`);
+        }
+        console.log('✅ Bucket trouvé:', bucket);
+      }
+    } catch (checkError) {
+      console.warn('⚠️ Erreur lors de la vérification du bucket:', checkError);
+      // Continuer quand même, peut-être que c'est juste un problème de permissions
+    }
     
     // Upload du fichier principal
     const { data, error } = await supabase.storage
@@ -133,8 +151,39 @@ export async function uploadFile(bucket, path, file, options = {}) {
       });
 
     if (error) {
-      console.error('❌ Erreur upload:', error);
-      throw error;
+      console.error('❌ Erreur upload Supabase:', error);
+      console.error('❌ Détails:', {
+        message: error.message,
+        statusCode: error.statusCode,
+        error: error.error
+      });
+      
+      // Messages d'erreur plus explicites
+      let errorMessage = 'Erreur lors de l\'upload de l\'image.';
+      
+      if (error.message?.includes('Bucket not found') || error.message?.includes('does not exist')) {
+        errorMessage = `Le bucket "${bucket}" n'existe pas. Veuillez le créer dans Supabase Storage (Dashboard → Storage → New bucket).`;
+      } else if (error.message?.includes('new row violates row-level security') || error.statusCode === 403) {
+        errorMessage = 'Permission refusée. Vérifiez les RLS policies du bucket dans Supabase.';
+      } else if (error.message?.includes('The resource already exists')) {
+        // Si le fichier existe déjà, essayer de le remplacer
+        console.log('ℹ️ Le fichier existe déjà, tentative de remplacement...');
+        const { data: updateData, error: updateError } = await supabase.storage
+          .from(bucket)
+          .update(path, file, {
+            cacheControl: '3600',
+          });
+        
+        if (updateError) {
+          throw updateError;
+        }
+        
+        data = updateData;
+      } else {
+        errorMessage = `Erreur: ${error.message || 'Erreur inconnue'}`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     console.log('✅ Fichier uploadé:', data.path);
@@ -155,7 +204,11 @@ export async function uploadFile(bucket, path, file, options = {}) {
     };
   } catch (error) {
     console.error('❌ Erreur uploadFile:', error);
-    throw error;
+    // Re-throw avec un message plus clair
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Erreur lors de l'upload: ${error.message || 'Erreur inconnue'}`);
   }
 }
 
