@@ -187,6 +187,31 @@ export default function ProductDetailPage() {
     setQuantity((prev) => Math.max(1, prev + delta));
   };
 
+  // Early returns pour éviter les erreurs si product est null
+  if (loading || !product) {
+    if (loading) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-text-secondary">Chargement du produit...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-text-secondary mb-4">Produit non trouvé</p>
+          <Link href="/product-catalog" className="text-primary hover:underline">
+            Retour au catalogue
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-container mx-auto px-4 lg:px-6 py-8">
