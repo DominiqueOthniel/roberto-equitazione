@@ -242,12 +242,20 @@ export async function uploadFile(bucket, path, file, options = {}) {
 
     console.log('✅ Fichier uploadé:', data.path);
 
-    // Nettoyer le chemin si Supabase a ajouté le nom du bucket
+    // Nettoyer le chemin : Supabase peut retourner le chemin avec ou sans préfixe
     let cleanPath = data.path;
-    // Si le chemin commence par le nom du bucket, le retirer
+    
+    // Retirer tous les préfixes "products/" répétés
+    while (cleanPath.startsWith('products/')) {
+      cleanPath = cleanPath.substring('products/'.length);
+    }
+    
+    // Si le chemin commence par le nom du bucket, le retirer aussi
     if (cleanPath.startsWith(`${bucket}/`)) {
       cleanPath = cleanPath.substring(bucket.length + 1);
     }
+
+    console.log('🔧 Chemin nettoyé:', cleanPath, '| Chemin original:', data.path);
 
     // Récupérer l'URL publique avec le chemin nettoyé
     const { data: urlData } = supabase.storage
@@ -293,7 +301,7 @@ export async function uploadProductImage(file, productName = 'product') {
     // Ne pas préfixer avec "products/" car le bucket est déjà "products"
     const path = fileName;
 
-    console.log('📤 Upload image produit:', { fileName, path, size: file.size });
+    console.log('📤 Upload image produit:', `fileName=${fileName}, path=${path}, size=${file.size}`);
 
     const result = await uploadFile('products', path, file);
     
