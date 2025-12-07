@@ -397,23 +397,64 @@ export async function listFiles(bucket, folder = '') {
       });
 
     if (error) {
+      // Ne pas logger les erreurs 404 (dossier vide ou inexistant)
+      if (error.statusCode === 404 || error.message?.includes('not found')) {
+        return [];
+      }
       console.error('Erreur lors de la liste des fichiers:', error);
       throw error;
     }
 
-    let allFiles = data || [];
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    let allFiles = [];
+    const files = [];
+    const folders = [];
+
+    // Séparer les fichiers et les dossiers
+    for (const item of data) {
+      // Un dossier n'a généralement pas de métadonnées de taille ou a un id null
+      // Un fichier a généralement des métadonnées avec une taille
+      if (item.metadata && item.metadata.size !== undefined) {
+        // C'est un fichier
+        files.push(item);
+      } else if (!item.name.includes('.')) {
+        // Probablement un dossier (pas d'extension et pas de métadonnées de taille)
+        folders.push(item);
+      } else {
+        // Fichier sans métadonnées, on l'ajoute quand même
+        files.push(item);
+      }
+    }
+
+    allFiles = [...files];
 
     // Récupérer récursivement les fichiers des sous-dossiers
-    for (const item of data || []) {
-      if (!item.name.includes('.')) {
-        // C'est probablement un dossier
-        const subFiles = await listFiles(bucket, folder ? `${folder}/${item.name}` : item.name);
-        allFiles = [...allFiles, ...subFiles];
+    for (const folderItem of folders) {
+      try {
+        const subFolderPath = folder ? `${folder}/${folderItem.name}` : folderItem.name;
+        const subFiles = await listFiles(bucket, subFolderPath);
+        // Ajouter le chemin complet aux noms des fichiers
+        const subFilesWithPath = subFiles.map(file => ({
+          ...file,
+          name: `${folderItem.name}/${file.name}`
+        }));
+        allFiles = [...allFiles, ...subFilesWithPath];
+      } catch (subError) {
+        // Ignorer les erreurs de sous-dossiers pour continuer avec les autres
+        console.warn(`Erreur lors de la lecture du sous-dossier ${folderItem.name}:`, subError);
       }
     }
 
     return allFiles;
   } catch (error) {
+    // Si c'est une erreur 400, retourner un tableau vide plutôt que de throw
+    if (error.statusCode === 400 || error.message?.includes('Bad Request')) {
+      console.warn('Erreur 400 lors de la liste des fichiers, retour d\'un tableau vide');
+      return [];
+    }
     console.error('Erreur listFiles:', error);
     throw error;
   }
@@ -451,7 +492,12 @@ export async function getStorageUsage(bucket) {
     };
   } catch (error) {
     console.error('Erreur getStorageUsage:', error);
-    throw error;
+    // Retourner des valeurs par défaut en cas d'erreur
+    return {
+      totalFiles: 0,
+      totalSize: 0,
+      sizeFormatted: '0 B'
+    };
   }
 }
 
@@ -484,7 +530,13 @@ export async function findOrphanImages(bucket, usedImageUrls = []) {
     usedImageUrls.forEach(url => usedUrls.add(url));
 
     // Lister tous les fichiers du bucket
-    const allFiles = await listFiles(bucket);
+    let allFiles = [];
+    try {
+      allFiles = await listFiles(bucket);
+    } catch (listError) {
+      console.warn('Erreur lors de la liste des fichiers pour findOrphanImages:', listError);
+      return []; // Retourner un tableau vide si on ne peut pas lister les fichiers
+    }
     
     // Extraire les chemins des images utilisées
     const usedPaths = new Set();
@@ -511,19 +563,26 @@ export async function findOrphanImages(bucket, usedImageUrls = []) {
         return isImage && !usedPaths.has(path);
       })
       .map(file => {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(file.name);
-        return {
-          path: file.name,
-          url: data.publicUrl,
-          size: file.metadata?.size || 0,
-          created_at: file.created_at
-        };
-      });
+        try {
+          const { data } = supabase.storage.from(bucket).getPublicUrl(file.name);
+          return {
+            path: file.name,
+            url: data.publicUrl,
+            size: file.metadata?.size || 0,
+            created_at: file.created_at
+          };
+        } catch (urlError) {
+          console.warn(`Erreur lors de la génération de l'URL pour ${file.name}:`, urlError);
+          return null;
+        }
+      })
+      .filter(Boolean); // Retirer les null
 
     return orphanImages;
   } catch (error) {
     console.error('Erreur findOrphanImages:', error);
-    throw error;
+    // Retourner un tableau vide plutôt que de throw pour éviter de casser l'interface
+    return [];
   }
 }
 

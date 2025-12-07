@@ -29,20 +29,35 @@ export default function StorageManagementPage() {
     try {
       setLoading(true);
       
-      // Charger l'utilisation du storage
-      const usage = await getStorageUsage('products');
-      setStorageUsage(usage);
+      // Charger l'utilisation du storage (avec gestion d'erreur)
+      try {
+        const usage = await getStorageUsage('products');
+        setStorageUsage(usage);
+      } catch (error) {
+        console.warn('Erreur lors du chargement de l\'utilisation:', error);
+        setStorageUsage({ totalFiles: 0, totalSize: 0, sizeFormatted: '0 B' });
+      }
 
-      // Charger les images orphelines
-      const orphans = await findOrphanImages('products');
-      setOrphanImages(orphans);
+      // Charger les images orphelines (avec gestion d'erreur)
+      try {
+        const orphans = await findOrphanImages('products');
+        setOrphanImages(orphans);
+      } catch (error) {
+        console.warn('Erreur lors du chargement des images orphelines:', error);
+        setOrphanImages([]);
+      }
 
-      // Charger tous les fichiers
-      const files = await listFiles('products');
-      setAllFiles(files);
+      // Charger tous les fichiers (avec gestion d'erreur)
+      try {
+        const files = await listFiles('products');
+        setAllFiles(files);
+      } catch (error) {
+        console.warn('Erreur lors du chargement des fichiers:', error);
+        setAllFiles([]);
+      }
     } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-      alert('Erreur lors du chargement des données: ' + error.message);
+      console.error('Erreur générale lors du chargement des données:', error);
+      // Ne pas afficher d'alert pour les erreurs individuelles, elles sont gérées ci-dessus
     } finally {
       setLoading(false);
     }
