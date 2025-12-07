@@ -178,7 +178,7 @@ export default function ProductDetailPage() {
                 className="object-cover"
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                bucket="product-images"
+                bucket="products"
                 useThumbnail={false}
                 quality={85}
               />
@@ -217,7 +217,7 @@ export default function ProductDetailPage() {
                     alt={`${product.name} - Immagine ${index + 1}`}
                     fill
                     className="object-cover"
-                    bucket="product-images"
+                    bucket="products"
                     useThumbnail={true}
                     thumbnailWidth={150}
                     thumbnailHeight={150}

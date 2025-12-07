@@ -97,3 +97,4 @@ WITH CHECK (
 -- (gardez la policy "Allow public reads from products bucket")
 */
 
+

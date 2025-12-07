@@ -68,3 +68,4 @@ Après avoir exécuté le script SQL, testez :
 
 Toutes les opérations devraient maintenant être visibles dans Supabase avec des logs détaillés dans la console.
 
+

@@ -298,3 +298,4 @@ SELECT 'user_carts', COUNT(*) FROM user_carts
 UNION ALL
 SELECT 'chat_messages', COUNT(*) FROM chat_messages;
 
+

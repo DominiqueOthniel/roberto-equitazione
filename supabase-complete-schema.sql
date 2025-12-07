@@ -451,3 +451,4 @@ BEGIN
     RAISE NOTICE '⚠️ Vous pouvez les restreindre plus tard selon vos besoins de sécurité';
 END $$;
 
+

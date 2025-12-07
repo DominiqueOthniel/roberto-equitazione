@@ -61,3 +61,4 @@ BEGIN
     RAISE NOTICE '⚠️ RLS est désactivé - réactivez-le plus tard avec des politiques appropriées';
 END $$;
 
+

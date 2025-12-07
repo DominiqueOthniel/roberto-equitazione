@@ -180,6 +180,13 @@ export default function AdminDashboard() {
             <Icon name="UsersIcon" size={20} variant="outline" />
             <span className="font-body">Gestisci i clienti</span>
           </Link>
+          <Link
+            href="/admin/storage"
+            className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-muted transition-fast"
+          >
+            <Icon name="PhotoIcon" size={20} variant="outline" />
+            <span className="font-body">Gestion du stockage</span>
+          </Link>
         </div>
       </div>
     </div>

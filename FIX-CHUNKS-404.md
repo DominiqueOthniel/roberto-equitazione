@@ -96,3 +96,4 @@ app.prepare().then(() => {
 3. Vider le cache du navigateur (Ctrl+Shift+Delete)
 4. Essayer en navigation privée
 
+

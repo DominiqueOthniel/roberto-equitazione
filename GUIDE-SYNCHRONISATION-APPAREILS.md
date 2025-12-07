@@ -136,3 +136,4 @@ Si le problème persiste :
 2. Vérifiez les erreurs dans Supabase Dashboard → Logs
 3. Vérifiez que le script SQL a été exécuté sans erreur
 
+

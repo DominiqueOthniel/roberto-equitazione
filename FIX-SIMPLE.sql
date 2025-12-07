@@ -21,3 +21,4 @@ END $$;
 -- 3. Vérification
 SELECT 'RLS désactivé, user_id est TEXT' as status;
 
+

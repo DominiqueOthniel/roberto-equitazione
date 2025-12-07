@@ -97,3 +97,4 @@ if (typeof window !== 'undefined') {
   window.testSupabaseConnection = testSupabaseConnection;
 }
 
+

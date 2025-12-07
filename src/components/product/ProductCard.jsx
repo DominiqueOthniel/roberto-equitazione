@@ -83,7 +83,7 @@ export default function ProductCard({ product }) {
               fill
               className="object-cover hover:scale-105 transition-base"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              bucket="product-images"
+              bucket="products"
               useThumbnail={true}
               thumbnailWidth={400}
               thumbnailHeight={400}

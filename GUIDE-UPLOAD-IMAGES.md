@@ -97,3 +97,4 @@ Le nom du fichier est généré automatiquement à partir du nom du produit + ti
 - Vérifiez que le bucket est public OU que les RLS policies permettent la lecture
 - Vérifiez l'URL retournée dans la console du navigateur
 
+

@@ -22,11 +22,11 @@ export default function OptimizedImage({
   quality = 75,
   fill = false,
   sizes,
-  bucket = 'product-images', // Bucket Supabase par défaut
+  bucket = 'products', // Bucket Supabase par défaut
   useThumbnail = true, // Utiliser thumbnail par défaut
   thumbnailWidth = 300,
   thumbnailHeight = 300,
-  fallbackSrc = '/assets/images/no_image.png',
+  fallbackSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzljYTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==',
   ...props
 }) {
   const [imageSrc, setImageSrc] = useState(null);
@@ -113,7 +113,10 @@ export default function OptimizedImage({
             cacheImage(src, signedUrl);
           }
         } catch (error) {
-          console.error('Erreur lors du chargement de l\'image Supabase:', error);
+          // Ne pas logger les erreurs "not found" comme des erreurs critiques
+          if (!error.message?.includes('not found') && !error.message?.includes('Object not found')) {
+            console.error('Erreur lors du chargement de l\'image Supabase:', error);
+          }
           if (mounted && !abortControllerRef.current?.signal.aborted) {
             setImageSrc(fallbackSrc);
             setHasError(true);
@@ -193,5 +196,6 @@ export default function OptimizedImage({
     />
   );
 }
+
 
 

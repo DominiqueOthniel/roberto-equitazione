@@ -65,3 +65,4 @@ Si Supabase ne fonctionne toujours pas, le panier fonctionnera avec localStorage
    ```
 4. Vérifiez dans Application → Local Storage → `cart`
 
+

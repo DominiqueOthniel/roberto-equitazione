@@ -72,7 +72,10 @@ export async function getSignedUrl(bucket, path, expiresIn = 3600) {
       .createSignedUrl(path, expiresIn);
 
     if (error) {
-      console.error('Erreur lors de la génération de la signed URL:', error);
+      // Ne pas logger les erreurs "Object not found" comme des erreurs critiques
+      if (error.message?.includes('Object not found') || error.message?.includes('not found')) {
+        throw new Error(`File not found: ${path}`);
+      }
       throw error;
     }
 
@@ -80,7 +83,10 @@ export async function getSignedUrl(bucket, path, expiresIn = 3600) {
     signedUrlCache.set(cacheKey, data.signedUrl);
     return data.signedUrl;
   } catch (error) {
-    console.error('Erreur getSignedUrl:', error);
+    // Ne pas logger les erreurs "not found" comme des erreurs critiques
+    if (!error.message?.includes('not found') && !error.message?.includes('Object not found')) {
+      console.error('Erreur getSignedUrl:', error);
+    }
     throw error;
   }
 }
@@ -105,10 +111,14 @@ export async function getThumbnailUrl(bucket, path, width = 300, height = 300) {
   // Essayer d'abord la miniature
   try {
     return await getSignedUrl(bucket, thumbnailPath);
-  } catch {
-    // Si la miniature n'existe pas, retourner l'image originale (mais plus petite)
-    // Note: Vous devrez créer les thumbnails lors de l'upload
-    return await getSignedUrl(bucket, path);
+  } catch (error) {
+    // Si la miniature n'existe pas, essayer l'image originale
+    try {
+      return await getSignedUrl(bucket, path);
+    } catch (originalError) {
+      // Si l'image originale n'existe pas non plus, relancer l'erreur
+      throw originalError;
+    }
   }
 }
 
@@ -332,6 +342,230 @@ export function cleanExpiredCache() {
 // Nettoyer le cache au chargement
 if (typeof window !== 'undefined') {
   cleanExpiredCache();
+}
+
+/**
+ * Supprime un fichier du storage
+ * @param {string} bucket - Nom du bucket
+ * @param {string} path - Chemin du fichier à supprimer
+ * @returns {Promise<boolean>} True si supprimé avec succès
+ */
+export async function deleteFile(bucket, path) {
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .remove([path]);
+
+    if (error) {
+      console.error('Erreur lors de la suppression du fichier:', error);
+      throw error;
+    }
+
+    // Retirer du cache
+    const cacheKey = `${bucket}/${path}`;
+    if (typeof window !== 'undefined') {
+      try {
+        const cache = JSON.parse(localStorage.getItem(SIGNED_URL_CACHE_KEY) || '{}');
+        delete cache[cacheKey];
+        localStorage.setItem(SIGNED_URL_CACHE_KEY, JSON.stringify(cache));
+      } catch (cacheError) {
+        console.warn('Erreur lors de la suppression du cache:', cacheError);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur deleteFile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Liste tous les fichiers d'un bucket (récursif)
+ * @param {string} bucket - Nom du bucket
+ * @param {string} folder - Dossier à lister (optionnel, défaut: '')
+ * @returns {Promise<Array<{name: string, id: string, updated_at: string, created_at: string, last_accessed_at: string, metadata: object}>>}
+ */
+export async function listFiles(bucket, folder = '') {
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .list(folder, {
+        limit: 1000,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' }
+      });
+
+    if (error) {
+      console.error('Erreur lors de la liste des fichiers:', error);
+      throw error;
+    }
+
+    let allFiles = data || [];
+
+    // Récupérer récursivement les fichiers des sous-dossiers
+    for (const item of data || []) {
+      if (!item.name.includes('.')) {
+        // C'est probablement un dossier
+        const subFiles = await listFiles(bucket, folder ? `${folder}/${item.name}` : item.name);
+        allFiles = [...allFiles, ...subFiles];
+      }
+    }
+
+    return allFiles;
+  } catch (error) {
+    console.error('Erreur listFiles:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtient l'utilisation du storage d'un bucket
+ * @param {string} bucket - Nom du bucket
+ * @returns {Promise<{totalFiles: number, totalSize: number, sizeFormatted: string}>}
+ */
+export async function getStorageUsage(bucket) {
+  try {
+    const files = await listFiles(bucket);
+    let totalSize = 0;
+
+    // Calculer la taille totale (si disponible dans les métadonnées)
+    files.forEach(file => {
+      if (file.metadata?.size) {
+        totalSize += file.metadata.size;
+      }
+    });
+
+    const formatSize = (bytes) => {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    };
+
+    return {
+      totalFiles: files.length,
+      totalSize,
+      sizeFormatted: formatSize(totalSize)
+    };
+  } catch (error) {
+    console.error('Erreur getStorageUsage:', error);
+    throw error;
+  }
+}
+
+/**
+ * Trouve les images orphelines (non utilisées dans les produits)
+ * @param {string} bucket - Nom du bucket
+ * @param {Array<string>} usedImageUrls - URLs d'images utilisées dans les produits
+ * @returns {Promise<Array<{path: string, url: string, size: number}>>}
+ */
+export async function findOrphanImages(bucket, usedImageUrls = []) {
+  try {
+    // Récupérer toutes les images utilisées dans les produits
+    let products = [];
+    try {
+      const productsModule = await import('@/utils/products-supabase');
+      products = await productsModule.getProducts();
+    } catch (importError) {
+      console.warn('Impossible de charger les produits, utilisation des URLs fournies uniquement:', importError);
+    }
+    
+    const usedUrls = new Set();
+    products.forEach(product => {
+      if (product.image) usedUrls.add(product.image);
+      if (product.images && Array.isArray(product.images)) {
+        product.images.forEach(img => usedUrls.add(img));
+      }
+    });
+    
+    // Ajouter les URLs fournies
+    usedImageUrls.forEach(url => usedUrls.add(url));
+
+    // Lister tous les fichiers du bucket
+    const allFiles = await listFiles(bucket);
+    
+    // Extraire les chemins des images utilisées
+    const usedPaths = new Set();
+    usedUrls.forEach(url => {
+      if (url && typeof url === 'string') {
+        if (url.includes('supabase.co/storage')) {
+          // Format: https://xxx.supabase.co/storage/v1/object/public/products/path/to/image.jpg
+          const pathMatch = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
+          if (pathMatch) {
+            usedPaths.add(pathMatch[1]);
+          }
+        } else if (url.startsWith('products/')) {
+          // Format direct: products/path/to/image.jpg
+          usedPaths.add(url.replace('products/', ''));
+        }
+      }
+    });
+
+    // Trouver les images orphelines
+    const orphanImages = allFiles
+      .filter(file => {
+        const path = file.name;
+        const isImage = path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp') || path.endsWith('.gif');
+        return isImage && !usedPaths.has(path);
+      })
+      .map(file => {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(file.name);
+        return {
+          path: file.name,
+          url: data.publicUrl,
+          size: file.metadata?.size || 0,
+          created_at: file.created_at
+        };
+      });
+
+    return orphanImages;
+  } catch (error) {
+    console.error('Erreur findOrphanImages:', error);
+    throw error;
+  }
+}
+
+/**
+ * Supprime plusieurs fichiers en une fois
+ * @param {string} bucket - Nom du bucket
+ * @param {Array<string>} paths - Chemins des fichiers à supprimer
+ * @returns {Promise<{success: number, failed: number}>}
+ */
+export async function deleteMultipleFiles(bucket, paths) {
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .remove(paths);
+
+    if (error) {
+      console.error('Erreur lors de la suppression multiple:', error);
+      throw error;
+    }
+
+    // Retirer du cache
+    if (typeof window !== 'undefined') {
+      try {
+        const cache = JSON.parse(localStorage.getItem(SIGNED_URL_CACHE_KEY) || '{}');
+        paths.forEach(path => {
+          const cacheKey = `${bucket}/${path}`;
+          delete cache[cacheKey];
+        });
+        localStorage.setItem(SIGNED_URL_CACHE_KEY, JSON.stringify(cache));
+      } catch (cacheError) {
+        console.warn('Erreur lors de la suppression du cache:', cacheError);
+      }
+    }
+
+    return {
+      success: data?.length || 0,
+      failed: paths.length - (data?.length || 0)
+    };
+  } catch (error) {
+    console.error('Erreur deleteMultipleFiles:', error);
+    throw error;
+  }
 }
 
 

@@ -102,15 +102,6 @@ export default function NewProductPage() {
     }
   };
 
-  const addImageUrl = () => {
-    const url = prompt('Inserisci URL immagine:');
-    if (url && url.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, url.trim()],
-      }));
-    }
-  };
 
   const removeImage = (index) => {
     setFormData((prev) => ({
@@ -304,25 +295,14 @@ export default function NewProductPage() {
                   <label className="block text-sm font-medium text-text-primary mb-2">
                     Immagine Principale
                   </label>
-                  <div className="space-y-2">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, true)}
-                      disabled={uploadingImage}
-                      className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-accent disabled:opacity-50"
-                    />
-                    <p className="text-xs text-text-secondary">Oppure inserisci un URL:</p>
-                    <input
-                      type="url"
-                      name="image"
-                      value={formData.image}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, true)}
+                    disabled={uploadingImage}
+                    className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-accent disabled:opacity-50"
+                  />
                   {uploadingImage && (
                     <p className="text-sm text-text-secondary mt-2">Upload in corso...</p>
                   )}
@@ -345,24 +325,14 @@ export default function NewProductPage() {
                   <label className="block text-sm font-medium text-text-primary mb-2">
                     Immagini Aggiuntive
                   </label>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="file"
-                      ref={additionalImagesInputRef}
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, false)}
-                      disabled={uploadingImage}
-                      className="flex-1 px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-accent disabled:opacity-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={addImageUrl}
-                      disabled={uploadingImage}
-                      className="px-4 py-2 border border-input rounded-md bg-background text-text-primary hover:bg-muted transition-fast disabled:opacity-50"
-                    >
-                      + URL
-                    </button>
-                  </div>
+                  <input
+                    type="file"
+                    ref={additionalImagesInputRef}
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, false)}
+                    disabled={uploadingImage}
+                    className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-accent disabled:opacity-50"
+                  />
                   {formData.images.length > 0 && (
                     <div className="grid grid-cols-4 gap-2">
                       {formData.images.map((img, index) => (

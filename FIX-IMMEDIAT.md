@@ -53,3 +53,4 @@ END $$;
 2. Copiez TOUS les messages d'erreur
 3. Vérifiez dans Application → Local Storage si `cart` existe
 
+
