@@ -74,6 +74,16 @@ export default function OptimizedImage({
         setIsSupabaseImage(true);
         
         try {
+          // Si c'est déjà une URL publique Supabase, l'utiliser directement
+          if (src.includes('/storage/v1/object/public/')) {
+            // URL publique, pas besoin de signed URL
+            if (mounted && !abortControllerRef.current?.signal.aborted) {
+              setImageSrc(src);
+              setIsLoading(false);
+            }
+            return;
+          }
+
           // Extraire le chemin du bucket depuis l'URL
           let storagePath = src;
           if (src.includes('supabase.co/storage')) {
@@ -85,6 +95,11 @@ export default function OptimizedImage({
             }
           } else if (src.startsWith('/')) {
             storagePath = src.substring(1);
+          }
+
+          // Vérifier que le chemin n'est pas vide
+          if (!storagePath || storagePath.trim() === '') {
+            throw new Error('Chemin de fichier vide');
           }
 
           // Vérifier le cache d'abord
@@ -113,10 +128,17 @@ export default function OptimizedImage({
             cacheImage(src, signedUrl);
           }
         } catch (error) {
-          // Ne pas logger les erreurs "not found" comme des erreurs critiques
-          if (!error.message?.includes('not found') && !error.message?.includes('Object not found')) {
+          // Ne pas logger les erreurs "not found" ou "400" comme des erreurs critiques
+          const isNotFoundError = error.message?.includes('not found') || 
+                                  error.message?.includes('Object not found') ||
+                                  error.message?.includes('File not found') ||
+                                  error.statusCode === 400 ||
+                                  error.statusCode === 404;
+          
+          if (!isNotFoundError) {
             console.error('Erreur lors du chargement de l\'image Supabase:', error);
           }
+          
           if (mounted && !abortControllerRef.current?.signal.aborted) {
             setImageSrc(fallbackSrc);
             setHasError(true);

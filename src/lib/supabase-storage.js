@@ -58,7 +58,24 @@ const signedUrlCache = {
  * @param {number} expiresIn - Durée de validité en secondes (défaut: 3600 = 1h)
  * @returns {Promise<string>} Signed URL
  */
+/**
+ * Vérifie si une URL est déjà une URL publique Supabase
+ */
+function isPublicUrl(url) {
+  return url && typeof url === 'string' && url.includes('/storage/v1/object/public/');
+}
+
 export async function getSignedUrl(bucket, path, expiresIn = 3600) {
+  // Vérifier que le chemin est valide
+  if (!path || path.trim() === '') {
+    throw new Error('Chemin de fichier invalide');
+  }
+
+  // Si le path est déjà une URL publique, la retourner directement
+  if (isPublicUrl(path)) {
+    return path;
+  }
+
   // Vérifier le cache d'abord
   const cacheKey = `${bucket}/${path}`;
   const cached = signedUrlCache.get(cacheKey);
@@ -72,9 +89,20 @@ export async function getSignedUrl(bucket, path, expiresIn = 3600) {
       .createSignedUrl(path, expiresIn);
 
     if (error) {
-      // Ne pas logger les erreurs "Object not found" comme des erreurs critiques
-      if (error.message?.includes('Object not found') || error.message?.includes('not found')) {
-        throw new Error(`File not found: ${path}`);
+      // Gérer les erreurs 400 (Bad Request) et 404 (Not Found)
+      if (error.statusCode === 400 || error.statusCode === 404 || 
+          error.message?.includes('Object not found') || 
+          error.message?.includes('not found') ||
+          error.message?.includes('Bad Request')) {
+        // Essayer d'utiliser l'URL publique à la place
+        try {
+          const { data: publicUrlData } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(path);
+          return publicUrlData.publicUrl;
+        } catch (publicUrlError) {
+          throw new Error(`File not found: ${path}`);
+        }
       }
       throw error;
     }
@@ -83,8 +111,14 @@ export async function getSignedUrl(bucket, path, expiresIn = 3600) {
     signedUrlCache.set(cacheKey, data.signedUrl);
     return data.signedUrl;
   } catch (error) {
-    // Ne pas logger les erreurs "not found" comme des erreurs critiques
-    if (!error.message?.includes('not found') && !error.message?.includes('Object not found')) {
+    // Ne pas logger les erreurs "not found" ou "400" comme des erreurs critiques
+    const isNotFoundError = error.message?.includes('not found') || 
+                            error.message?.includes('Object not found') ||
+                            error.message?.includes('File not found') ||
+                            error.statusCode === 400 ||
+                            error.statusCode === 404;
+    
+    if (!isNotFoundError) {
       console.error('Erreur getSignedUrl:', error);
     }
     throw error;
