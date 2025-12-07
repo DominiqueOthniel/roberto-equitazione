@@ -1,12 +1,20 @@
--- Configuration Supabase Storage pour l'upload d'images produits
--- Exécutez ce script dans l'éditeur SQL de Supabase
-
--- 1. Créer le bucket "products" (si pas déjà créé)
--- Note: Vous devez créer le bucket manuellement dans l'interface Supabase Storage
--- Nom: products
--- Public: OUI
-
--- 2. Configurer les RLS Policies pour permettre l'upload et la lecture
+-- ============================================
+-- CONFIGURATION BUCKET "products" SUPABASE
+-- ============================================
+-- 
+-- ⚠️ IMPORTANT: Les buckets ne peuvent PAS être créés via SQL
+-- Vous devez créer le bucket manuellement dans le Dashboard Supabase
+--
+-- ÉTAPE 1: Créer le bucket (via Dashboard)
+-- 1. Allez dans votre projet Supabase Dashboard
+-- 2. Cliquez sur "Storage" dans le menu de gauche
+-- 3. Cliquez sur "New bucket"
+-- 4. Nom: products
+-- 5. Public bucket: ✅ OUI (cochez cette case)
+-- 6. Cliquez sur "Create bucket"
+--
+-- ÉTAPE 2: Exécutez ce script SQL pour configurer les permissions
+-- ============================================
 
 -- Policy pour permettre l'upload d'images (tous les utilisateurs authentifiés ou non)
 -- ⚠️ Pour la sécurité, vous pouvez restreindre aux admins seulement
