@@ -26,7 +26,7 @@ export default function ProductCatalogPage() {
         setLoading(true);
         const productsData = await getProducts();
         
-        console.log('Produits chargés depuis Supabase:', productsData);
+        console.log(`📦 Produits chargés depuis Supabase: ${productsData.length} produits`);
         
         // Transformer les données Supabase au format attendu
         const formattedProducts = productsData.map(product => ({
@@ -44,13 +44,16 @@ export default function ProductCatalogPage() {
           material: product.material || ''
         }));
 
-        console.log('Produits formatés:', formattedProducts);
-        console.log('Types uniques:', [...new Set(formattedProducts.map(p => p.type))]);
-        console.log('Tailles uniques:', [...new Set(formattedProducts.map(p => p.size))]);
-        console.log('Matériaux uniques:', [...new Set(formattedProducts.map(p => p.material))]);
+        const uniqueTypes = [...new Set(formattedProducts.map(p => p.type).filter(Boolean))];
+        const uniqueSizes = [...new Set(formattedProducts.map(p => p.size).filter(Boolean))];
+        const uniqueMaterials = [...new Set(formattedProducts.map(p => p.material).filter(Boolean))];
+        
+        console.log(`📊 Types uniques: ${uniqueTypes.join(', ') || 'aucun'}`);
+        console.log(`📏 Tailles uniques: ${uniqueSizes.join(', ') || 'aucune'}`);
+        console.log(`🧵 Matériaux uniques: ${uniqueMaterials.join(', ') || 'aucun'}`);
 
         setProducts(formattedProducts);
-        console.log(`${formattedProducts.length} produits chargés depuis Supabase`);
+        console.log(`✅ ${formattedProducts.length} produits chargés et formatés depuis Supabase`);
       } catch (error) {
         console.error('Erreur lors du chargement des produits:', error);
         console.error('Détails de l\'erreur:', error.message, error.stack);
@@ -74,11 +77,7 @@ export default function ProductCatalogPage() {
       return [];
     }
     
-    console.log('🔍 Filtrage des produits:', {
-      total: products.length,
-      filters: filters,
-      priceRange: filters.priceRange
-    });
+    console.log('🔍 Filtrage des produits:', `total=${products.length}, types=${filters.types?.length || 0}, sizes=${filters.sizes?.length || 0}, materials=${filters.materials?.length || 0}, priceRange=[${filters.priceRange[0]}-${filters.priceRange[1]}]`);
     
     let filtered = products.filter(product => {
       // Filter by price
@@ -104,7 +103,7 @@ export default function ProductCatalogPage() {
       return true;
     });
 
-    console.log('✅ Produits filtrés:', filtered.length, 'sur', products.length);
+    console.log(`✅ Produits filtrés: ${filtered.length} sur ${products.length}`);
 
     // Sort products
     switch (sortBy) {
