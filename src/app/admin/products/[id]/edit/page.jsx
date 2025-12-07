@@ -135,6 +135,10 @@ export default function EditProductPage() {
       
       console.log('✅ Image uploadée:', imageUrl);
 
+      // Ajouter un petit délai pour laisser Supabase rendre l'image accessible
+      // et éviter les erreurs 400 lors du premier chargement
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       if (isMain) {
         setFormData(prev => ({ ...prev, image: imageUrl }));
         setImagePreview(imageUrl);

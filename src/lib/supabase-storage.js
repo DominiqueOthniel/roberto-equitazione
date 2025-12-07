@@ -166,7 +166,7 @@ export async function getThumbnailUrl(bucket, path, width = 300, height = 300) {
  */
 export async function uploadFile(bucket, path, file, options = {}) {
   try {
-    console.log('📤 Upload fichier:', { bucket, path, fileName: file.name, size: file.size, type: file.type });
+    console.log('📤 Upload fichier:', `bucket=${bucket}, path=${path}, fileName=${file.name}, size=${file.size}, type=${file.type}`);
     
     // Vérifier que le bucket existe (optionnel, mais utile pour le debug)
     // Ne pas bloquer si la vérification échoue (problème de permissions RLS)
