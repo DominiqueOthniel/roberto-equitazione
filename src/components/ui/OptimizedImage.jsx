@@ -185,6 +185,43 @@ export default function OptimizedImage({
     );
   }
 
+  // Pour les images Supabase, utiliser un tag <img> natif pour éviter l'optimisation Next.js
+  // qui cause des erreurs 400
+  if (isSupabaseImage) {
+    const imgStyle = {};
+    if (width) imgStyle.width = width;
+    if (height) imgStyle.height = height;
+
+    if (fill) {
+      return (
+        <div className={`relative ${className}`} style={{ width: '100%', height: '100%' }}>
+          <img
+            src={imageSrc}
+            alt={alt}
+            className={`${commonClassName} absolute inset-0 w-full h-full object-cover`}
+            onError={handleError}
+            onLoad={handleLoad}
+            style={imgStyle}
+            {...props}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={imageSrc}
+        alt={alt}
+        className={commonClassName}
+        onError={handleError}
+        onLoad={handleLoad}
+        style={imgStyle}
+        {...props}
+      />
+    );
+  }
+
+  // Pour les autres images, utiliser le composant Next.js Image
   const imageProps = {
     src: imageSrc,
     alt,
@@ -193,7 +230,6 @@ export default function OptimizedImage({
     quality,
     onError: handleError,
     onLoad: handleLoad,
-    unoptimized: isSupabaseImage, // Désactiver l'optimisation Next.js pour les images Supabase (déjà optimisées)
     ...props,
   };
 
