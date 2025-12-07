@@ -1,16 +1,21 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import Link from 'next/link';
 import { addToCart } from '@/utils/cart-supabase';
+import { getProductById } from '@/utils/products-supabase';
 import ReviewForm from '@/components/product/ReviewForm';
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const productId = params?.id;
 
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState('16.5');
   const [quantity, setQuantity] = useState(1);
@@ -18,44 +23,67 @@ export default function ProductDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const reviewsLoadedRef = useRef(false);
 
-  const product = {
-    id: productId || '1',
-    brand: 'CWD',
-    name: 'Sella da Salto Professionale Elite',
-    rating: 4.8,
-    reviews: 60,
-    price: 2850,
-    originalPrice: 3200,
-    discount: 11,
-    images: [
-      'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=800&h=1000&fit=crop',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=1000&fit=crop',
-      'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800&h=1000&fit=crop',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=1000&fit=crop',
-      'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=800&h=1000&fit=crop',
-      'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800&h=1000&fit=crop'
-    ],
-    description: 'Sella da salto ostacoli di altissima qualità, progettata per cavalieri professionisti e competizioni di alto livello. Realizzata con pelle francese di prima scelta, offre comfort eccezionale e stabilità durante il salto. Il design ergonomico garantisce una posizione ottimale del cavaliere, mentre i materiali premium assicurano durabilità e prestazioni superiori.',
-    disciplina: 'Salto Ostacoli',
-    paeseOrigine: 'Francia',
-    technicalSpecs: {
-      misuraSedile: '17" (43 cm)',
-      larghezzaArcione: 'Media',
-      lunghezzaQuartieri: 'Standard',
-      materiale: 'Pelle Francese Premium'
-    },
-    features: [
-      'Pelle francese di prima scelta conciata vegetalmente',
-      'Arcione regolabile per adattarsi a diverse conformazioni del cavallo',
-      'Quartieri profondi per maggiore sicurezza durante il salto',
-      'Cuscini imbottiti con lana vergine per comfort superiore',
-      'Sistema di bilanciamento avanzato per distribuzione ottimale del peso',
-      'Cuciture rinforzate per durabilità a lungo termine',
-      'Compatibile con sottosella standard e anatomici',
-      'Manutenzione semplice con prodotti per pelle standard'
-    ],
-    sizes: ['16.5', '17', '17.5']
-  };
+  // Charger le produit depuis Supabase
+  useEffect(() => {
+    const loadProduct = async () => {
+      if (!productId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const productData = await getProductById(productId);
+        
+        if (!productData) {
+          console.error('Produit non trouvé:', productId);
+          router.push('/product-catalog');
+          return;
+        }
+
+        // Transformer les données Supabase au format attendu
+        const formattedProduct = {
+          id: productData.id,
+          brand: productData.brand || '',
+          name: productData.name || '',
+          rating: productData.rating ? parseFloat(productData.rating) : 0,
+          reviews: productData.reviews_count || 0,
+          price: parseFloat(productData.price) || 0,
+          originalPrice: productData.original_price ? parseFloat(productData.original_price) : null,
+          discount: productData.original_price && productData.price 
+            ? Math.round(((productData.original_price - productData.price) / productData.original_price) * 100)
+            : null,
+          images: productData.images && Array.isArray(productData.images) && productData.images.length > 0
+            ? productData.images
+            : productData.image
+            ? [productData.image]
+            : [],
+          description: productData.description || '',
+          disciplina: productData.type || '',
+          paeseOrigine: productData.material || '',
+          technicalSpecs: {
+            misuraSedile: productData.size ? `${productData.size}"` : 'N/A',
+            larghezzaArcione: 'Medium',
+            lunghezzaQuartieri: 'Standard',
+            materiale: productData.material || 'N/A'
+          },
+          features: productData.description 
+            ? productData.description.split('.').filter(f => f.trim().length > 0).slice(0, 8)
+            : [],
+          sizes: productData.size ? [productData.size] : ['16.5', '17', '17.5']
+        };
+
+        setProduct(formattedProduct);
+      } catch (error) {
+        console.error('Erreur lors du chargement du produit:', error);
+        router.push('/product-catalog');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [productId, router]);
 
   // Charger les avis depuis localStorage (une seule fois)
   useEffect(() => {
@@ -124,12 +152,14 @@ export default function ProductDetailPage() {
   const reviewsData = calculateReviewsData();
 
   const handleAddToCart = () => {
+    if (!product) return;
+    
     try {
       addToCart({
         id: product.id,
         name: product.name,
         brand: product.brand,
-        image: product.images[0],
+        image: product.images && product.images.length > 0 ? product.images[0] : '',
         price: product.price,
         quantity: quantity,
         specs: {
@@ -144,10 +174,12 @@ export default function ProductDetailPage() {
   };
 
   const nextImage = () => {
+    if (!product || !product.images || product.images.length === 0) return;
     setSelectedImageIndex((prev) => (prev + 1) % product.images.length);
   };
 
   const prevImage = () => {
+    if (!product || !product.images || product.images.length === 0) return;
     setSelectedImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
   };
 
@@ -171,17 +203,23 @@ export default function ProductDetailPage() {
           <div>
             {/* Main Image */}
             <div className="relative aspect-[3/4] bg-surface rounded-lg overflow-hidden mb-4">
-              <OptimizedImage
-                src={product.images[selectedImageIndex]}
-                alt={product.name}
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                bucket="products"
-                useThumbnail={false}
-                quality={85}
-              />
+              {product.images && product.images.length > 0 ? (
+                <OptimizedImage
+                  src={product.images[selectedImageIndex] || product.images[0]}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  bucket="products"
+                  useThumbnail={false}
+                  quality={85}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-text-secondary">
+                  <span>Aucune image</span>
+                </div>
+              )}
               <button
                 onClick={prevImage}
                 className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-background transition-fast"
@@ -203,33 +241,37 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail Images */}
-            <div className="grid grid-cols-6 gap-2">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={`relative aspect-square bg-surface rounded-lg overflow-hidden border-2 transition-fast ${
-                    selectedImageIndex === index ? 'border-primary' : 'border-transparent hover:border-border'
-                  }`}
-                >
-                  <OptimizedImage
-                    src={image}
-                    alt={`${product.name} - Immagine ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    bucket="products"
-                    useThumbnail={true}
-                    thumbnailWidth={150}
-                    thumbnailHeight={150}
-                    quality={70}
-                    sizes="(max-width: 1024px) 16.66vw, 8vw"
-                  />
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-text-secondary text-center mt-2">
-              {selectedImageIndex + 1}/{product.images.length}
-            </p>
+            {product.images && product.images.length > 1 && (
+              <>
+                <div className="grid grid-cols-6 gap-2">
+                  {product.images.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`relative aspect-square bg-surface rounded-lg overflow-hidden border-2 transition-fast ${
+                        selectedImageIndex === index ? 'border-primary' : 'border-transparent hover:border-border'
+                      }`}
+                    >
+                      <OptimizedImage
+                        src={image}
+                        alt={`${product.name} - Immagine ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        bucket="products"
+                        useThumbnail={true}
+                        thumbnailWidth={150}
+                        thumbnailHeight={150}
+                        quality={70}
+                        sizes="(max-width: 1024px) 16.66vw, 8vw"
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-text-secondary text-center mt-2">
+                  {selectedImageIndex + 1}/{product.images.length}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Right - Product Info */}
