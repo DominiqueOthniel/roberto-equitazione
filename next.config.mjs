@@ -25,6 +25,10 @@ const nextConfig = {
           protocol: 'https',
           hostname: 'th.bing.com',
         },
+        {
+          protocol: 'https',
+          hostname: '*.supabase.co',
+        },
       ],
       // Optimisation pour l'Italie : cache agressif des images
       minimumCacheTTL: 60,

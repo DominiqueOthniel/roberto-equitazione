@@ -169,21 +169,23 @@ export async function uploadFile(bucket, path, file, options = {}) {
     console.log('📤 Upload fichier:', { bucket, path, fileName: file.name, size: file.size, type: file.type });
     
     // Vérifier que le bucket existe (optionnel, mais utile pour le debug)
+    // Ne pas bloquer si la vérification échoue (problème de permissions RLS)
     try {
       const { data: buckets, error: listError } = await supabase.storage.listBuckets();
       if (listError) {
-        console.warn('⚠️ Impossible de lister les buckets:', listError);
-      } else {
-        const bucketExists = buckets?.some(b => b.name === bucket);
-        if (!bucketExists) {
-          console.error('❌ Le bucket n\'existe pas:', bucket);
-          throw new Error(`Le bucket "${bucket}" n'existe pas dans Supabase Storage. Veuillez le créer dans le dashboard Supabase.`);
+        // Ne pas logger comme erreur, juste un avertissement silencieux
+        // C'est souvent un problème de permissions RLS qui n'empêche pas l'upload
+      } else if (buckets) {
+        const bucketExists = buckets.some(b => b.name === bucket);
+        if (bucketExists) {
+          console.log('✅ Bucket trouvé:', bucket);
         }
-        console.log('✅ Bucket trouvé:', bucket);
+        // Ne pas throw si le bucket n'existe pas, l'upload peut quand même fonctionner
+        // (le bucket peut exister mais ne pas être listable à cause des RLS)
       }
     } catch (checkError) {
-      console.warn('⚠️ Erreur lors de la vérification du bucket:', checkError);
-      // Continuer quand même, peut-être que c'est juste un problème de permissions
+      // Ignorer silencieusement les erreurs de vérification
+      // L'upload sera tenté de toute façon
     }
     
     // Upload du fichier principal
@@ -240,10 +242,17 @@ export async function uploadFile(bucket, path, file, options = {}) {
 
     console.log('✅ Fichier uploadé:', data.path);
 
-    // Récupérer l'URL publique
+    // Nettoyer le chemin si Supabase a ajouté le nom du bucket
+    let cleanPath = data.path;
+    // Si le chemin commence par le nom du bucket, le retirer
+    if (cleanPath.startsWith(`${bucket}/`)) {
+      cleanPath = cleanPath.substring(bucket.length + 1);
+    }
+
+    // Récupérer l'URL publique avec le chemin nettoyé
     const { data: urlData } = supabase.storage
       .from(bucket)
-      .getPublicUrl(data.path);
+      .getPublicUrl(cleanPath);
 
     const publicUrl = urlData.publicUrl;
     console.log('✅ URL publique:', publicUrl);
@@ -251,7 +260,7 @@ export async function uploadFile(bucket, path, file, options = {}) {
     // Si on veut créer une miniature, il faudrait le faire côté serveur
     // Pour l'instant, on retourne juste le chemin et l'URL
     return {
-      path: data.path,
+      path: cleanPath,
       url: publicUrl,
     };
   } catch (error) {
@@ -281,7 +290,8 @@ export async function uploadProductImage(file, productName = 'product') {
       .substring(0, 50);
     const fileExtension = file.name.split('.').pop() || 'jpg';
     const fileName = `${sanitizedName}-${timestamp}.${fileExtension}`;
-    const path = `products/${fileName}`;
+    // Ne pas préfixer avec "products/" car le bucket est déjà "products"
+    const path = fileName;
 
     console.log('📤 Upload image produit:', { fileName, path, size: file.size });
 
