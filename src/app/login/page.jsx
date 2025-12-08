@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -28,34 +28,52 @@ export default function LoginPage() {
   const [isNewUser, setIsNewUser] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const isNavigatingRef = useRef(false);
+  
+  // Fonction sécurisée pour mettre à jour l'état - ne fait rien si navigation en cours
+  const safeSetState = (setter, value) => {
+    if (isNavigatingRef.current || (typeof window !== 'undefined' && window.__isNavigating)) {
+      return;
+    }
+    setter(value);
+  };
 
   const handleInputChange = (e) => {
+    if (isNavigatingRef.current || (typeof window !== 'undefined' && window.__isNavigating)) {
+      return;
+    }
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    setError('');
+    safeSetState(setError, '');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    
+    // Ne rien faire si navigation déjà en cours
+    if (isNavigatingRef.current || (typeof window !== 'undefined' && window.__isNavigating)) {
+      return;
+    }
+    
+    safeSetState(setError, '');
+    safeSetState(setLoading, true);
 
     try {
       if (isNewUser) {
         // Nouvel utilisateur - inscription
         if (!formData.email || !formData.nome || !formData.cognome || !formData.password) {
-          setError('Per favore, compila tutti i campi obbligatori.');
-          setLoading(false);
+          safeSetState(setError, 'Per favore, compila tutti i campi obbligatori.');
+          safeSetState(setLoading, false);
           return;
         }
         
         // Vérifier que le mot de passe a au moins 6 caractères
         if (formData.password.length < 6) {
-          setError('La password deve contenere almeno 6 caratteri.');
-          setLoading(false);
+          safeSetState(setError, 'La password deve contenere almeno 6 caratteri.');
+          safeSetState(setLoading, false);
           return;
         }
 
@@ -82,6 +100,7 @@ export default function LoginPage() {
           }
           // Définir le flag pour empêcher les composants de réagir
           window.__isNavigating = true;
+          isNavigatingRef.current = true;
         }
 
         // Sauvegarder l'utilisateur dans localStorage
@@ -100,8 +119,12 @@ export default function LoginPage() {
         if (typeof window !== 'undefined') {
           const navSuccess = safeNavigate('/user-dashboard');
           if (!navSuccess) {
-            setError('Erreur lors de la redirection. Veuillez réessayer.');
-            setLoading(false);
+            isNavigatingRef.current = false;
+            if (typeof window !== 'undefined') {
+              window.__isNavigating = false;
+            }
+            safeSetState(setError, 'Erreur lors de la redirection. Veuillez réessayer.');
+            safeSetState(setLoading, false);
             return;
           }
         } else {
@@ -110,8 +133,8 @@ export default function LoginPage() {
       } else {
         // Utilisateur existant - connexion
         if (!formData.email || !formData.password) {
-          setError('Per favore, inserisci email e password.');
-          setLoading(false);
+          safeSetState(setError, 'Per favore, inserisci email e password.');
+          safeSetState(setLoading, false);
           return;
         }
 
@@ -121,8 +144,8 @@ export default function LoginPage() {
           const isValid = await verifyPassword(formData.email, formData.password);
           
           if (!isValid) {
-            setError('Email o password non corretti.');
-            setLoading(false);
+            safeSetState(setError, 'Email o password non corretti.');
+            safeSetState(setLoading, false);
             return;
           }
 
@@ -131,8 +154,8 @@ export default function LoginPage() {
           const customer = await getCustomerByEmail(formData.email);
           
           if (!customer) {
-            setError('Utente non trovato. Per favore, registrati prima.');
-            setLoading(false);
+            safeSetState(setError, 'Utente non trovato. Per favore, registrati prima.');
+            safeSetState(setLoading, false);
             return;
           }
 
@@ -155,6 +178,7 @@ export default function LoginPage() {
             }
             // Définir le flag pour empêcher les composants de réagir
             window.__isNavigating = true;
+            isNavigatingRef.current = true;
           }
 
           localStorage.setItem('user', JSON.stringify(userData));
@@ -170,8 +194,12 @@ export default function LoginPage() {
           if (typeof window !== 'undefined') {
             const navSuccess = safeNavigate('/user-dashboard');
             if (!navSuccess) {
-              setError('Erreur lors de la redirection. Veuillez réessayer.');
-              setLoading(false);
+              isNavigatingRef.current = false;
+              if (typeof window !== 'undefined') {
+                window.__isNavigating = false;
+              }
+              safeSetState(setError, 'Erreur lors de la redirection. Veuillez réessayer.');
+              safeSetState(setLoading, false);
               return;
             }
           } else {
@@ -180,8 +208,8 @@ export default function LoginPage() {
           return;
         } catch (authError) {
           console.error('Erreur lors de la vérification:', authError);
-          setError('Erreur de connexion. Vérifiez vos identifiants et réessayez.');
-          setLoading(false);
+          safeSetState(setError, 'Erreur de connexion. Vérifiez vos identifiants et réessayez.');
+          safeSetState(setLoading, false);
           return;
         }
       }
@@ -201,8 +229,8 @@ export default function LoginPage() {
         }
       }
       
-      setError(errorMessage);
-      setLoading(false);
+      safeSetState(setError, errorMessage);
+      safeSetState(setLoading, false);
     }
   };
 
@@ -355,8 +383,11 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
+                  if (isNavigatingRef.current || (typeof window !== 'undefined' && window.__isNavigating)) {
+                    return;
+                  }
                   setIsNewUser(!isNewUser);
-                  setError('');
+                  safeSetState(setError, '');
                   setFormData(prev => ({ ...prev, password: '' }));
                 }}
                 className="text-sm text-primary hover:underline"
