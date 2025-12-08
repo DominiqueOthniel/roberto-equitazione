@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { safeNavigate } from '@/utils/navigation-safe';
 
 // Fonction pour hasher le mot de passe (SHA-256)
 async function hashPassword(password) {
@@ -79,15 +80,17 @@ export default function LoginPage() {
           console.log('✅ Email de synchronisation sauvegardé:', newUser.email);
         }
 
-        // Naviguer immédiatement pour éviter les conflits de démontage
+        // Naviguer de manière sécurisée pour éviter les conflits de démontage
         // localStorage.setItem est synchrone, donc la valeur est déjà sauvegardée
         // Note: registerCustomer et createNotification seront gérés par UserAccountMenu
         // qui détectera le changement via localStorage au chargement de la nouvelle page
         if (typeof window !== 'undefined') {
-          // Marquer qu'une navigation est en cours pour empêcher les composants de réagir
-          window.__isNavigating = true;
-          // Naviguer immédiatement
-          window.location.href = '/user-dashboard';
+          const navSuccess = safeNavigate('/user-dashboard');
+          if (!navSuccess) {
+            setError('Erreur lors de la redirection. Veuillez réessayer.');
+            setLoading(false);
+            return;
+          }
         } else {
           router.replace('/user-dashboard');
         }
@@ -100,51 +103,78 @@ export default function LoginPage() {
         }
 
         // Vérifier le mot de passe via Supabase
-        const { verifyPassword } = await import('@/utils/customers-supabase');
-        const isValid = await verifyPassword(formData.email, formData.password);
-        
-        if (isValid) {
+        try {
+          const { verifyPassword } = await import('@/utils/customers-supabase');
+          const isValid = await verifyPassword(formData.email, formData.password);
+          
+          if (!isValid) {
+            setError('Email o password non corretti.');
+            setLoading(false);
+            return;
+          }
+
           // Récupérer les données du client
           const { getCustomerByEmail } = await import('@/utils/customers-supabase');
           const customer = await getCustomerByEmail(formData.email);
           
-          if (customer) {
-            const userData = {
-              name: customer.name,
-              email: customer.email,
-              phone: customer.phone || '',
-              memberSince: customer.memberSince || new Date().toLocaleDateString('it-IT'),
-              isVerified: customer.isVerified || false
-            };
-            localStorage.setItem('user', JSON.stringify(userData));
-            
-            // Sauvegarder l'email pour la synchronisation entre appareils
-            if (customer.email) {
-              localStorage.setItem('sync_email', customer.email.trim().toLowerCase());
-              console.log('✅ Email de synchronisation sauvegardé:', customer.email);
-            }
-            
-            // Naviguer immédiatement pour éviter les conflits de démontage
-            // localStorage.setItem est synchrone, donc la valeur est déjà sauvegardée
-            if (typeof window !== 'undefined') {
-              // Marquer qu'une navigation est en cours pour empêcher les composants de réagir
-              window.__isNavigating = true;
-              // Naviguer immédiatement
-              window.location.href = '/user-dashboard';
-            } else {
-              router.replace('/user-dashboard');
-            }
+          if (!customer) {
+            setError('Utente non trovato. Per favore, registrati prima.');
+            setLoading(false);
             return;
           }
+
+          const userData = {
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone || '',
+            memberSince: customer.memberSince || new Date().toLocaleDateString('it-IT'),
+            isVerified: customer.isVerified || false
+          };
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          // Sauvegarder l'email pour la synchronisation entre appareils
+          if (customer.email) {
+            localStorage.setItem('sync_email', customer.email.trim().toLowerCase());
+            console.log('✅ Email de synchronisation sauvegardé:', customer.email);
+          }
+          
+          // Naviguer de manière sécurisée pour éviter les conflits de démontage
+          // localStorage.setItem est synchrone, donc la valeur est déjà sauvegardée
+          if (typeof window !== 'undefined') {
+            const navSuccess = safeNavigate('/user-dashboard');
+            if (!navSuccess) {
+              setError('Erreur lors de la redirection. Veuillez réessayer.');
+              setLoading(false);
+              return;
+            }
+          } else {
+            router.replace('/user-dashboard');
+          }
+          return;
+        } catch (authError) {
+          console.error('Erreur lors de la vérification:', authError);
+          setError('Erreur de connexion. Vérifiez vos identifiants et réessayez.');
+          setLoading(false);
+          return;
         }
-        
-        // Mot de passe incorrect ou utilisateur non trouvé
-        setError('Email o password non corretti.');
       }
     } catch (error) {
       console.error('Erreur lors de la connexion:', error);
-      setError('Si è verificato un errore. Riprova.');
-    } finally {
+      
+      // Messages d'erreur plus spécifiques
+      let errorMessage = 'Si è verificato un errore. Riprova.';
+      
+      if (error?.message) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet.';
+        } else if (error.message.includes('password') || error.message.includes('auth')) {
+          errorMessage = 'Email o password non corretti.';
+        } else if (error.message.includes('not found') || error.message.includes('non trovato')) {
+          errorMessage = 'Utente non trovato. Per favore, registrati prima.';
+        }
+      }
+      
+      setError(errorMessage);
       setLoading(false);
     }
   };
