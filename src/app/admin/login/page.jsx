@@ -95,7 +95,7 @@ export default function AdminLoginPage() {
                   required
                   autoComplete="email"
                   className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-background text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-fast"
-                  placeholder="admin@robertoequitazione.it"
+                  placeholder="Inserisci la tua email"
                 />
               </div>
             </div>
@@ -182,21 +182,6 @@ export default function AdminLoginPage() {
               )}
             </button>
           </form>
-
-          {/* Informazioni di accesso per la demo */}
-          <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-xs text-text-secondary text-center mb-2">
-              <strong>Demo:</strong> Usa queste credenziali per accedere
-            </p>
-            <div className="bg-muted rounded-md p-3 space-y-1">
-              <p className="text-xs text-text-secondary">
-                <strong>Email :</strong> admin@robertoequitazione.it
-              </p>
-              <p className="text-xs text-text-secondary">
-                <strong>Password:</strong> admin123
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Lien retour */}
