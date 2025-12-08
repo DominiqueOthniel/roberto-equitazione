@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, startTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { registerCustomer } from '@/utils/customers-supabase';
-import { createNotification } from '@/utils/notifications';
 
 // Fonction pour hasher le mot de passe (SHA-256)
 async function hashPassword(password) {
@@ -81,31 +79,15 @@ export default function LoginPage() {
           console.log('✅ Email de synchronisation sauvegardé:', newUser.email);
         }
 
-        // Enregistrer automatiquement le client dans la base de données admin
-        const customerData = registerCustomer(newUser);
-        
-        // Créer une notification pour l'admin
-        if (customerData) {
-          createNotification(
-            'message',
-            'Nuovo cliente registrato',
-            `${newUser.name} (${newUser.email}) si è appena registrato`,
-            { customerId: customerData.id, type: 'customer_registration' }
-          );
-        }
-
-        // Rediriger immédiatement, l'événement sera déclenché après la navigation
-        // Les composants détecteront le changement via localStorage
+        // Naviguer immédiatement pour éviter les conflits de démontage
+        // localStorage.setItem est synchrone, donc la valeur est déjà sauvegardée
+        // Note: registerCustomer et createNotification seront gérés par UserAccountMenu
+        // qui détectera le changement via localStorage au chargement de la nouvelle page
         if (typeof window !== 'undefined') {
-          // Utiliser startTransition pour les mises à jour non urgentes
-          startTransition(() => {
-            // Rediriger d'abord
-            router.replace('/user-dashboard');
-            // Déclencher l'événement après un court délai pour que la navigation soit en cours
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('userLoggedIn'));
-            }, 50);
-          });
+          // Marquer qu'une navigation est en cours pour empêcher les composants de réagir
+          window.__isNavigating = true;
+          // Naviguer immédiatement
+          window.location.href = '/user-dashboard';
         } else {
           router.replace('/user-dashboard');
         }
@@ -142,18 +124,13 @@ export default function LoginPage() {
               console.log('✅ Email de synchronisation sauvegardé:', customer.email);
             }
             
-            // Rediriger immédiatement, l'événement sera déclenché après la navigation
-            // Les composants détecteront le changement via localStorage
+            // Naviguer immédiatement pour éviter les conflits de démontage
+            // localStorage.setItem est synchrone, donc la valeur est déjà sauvegardée
             if (typeof window !== 'undefined') {
-              // Utiliser startTransition pour les mises à jour non urgentes
-              startTransition(() => {
-                // Rediriger d'abord
-                router.replace('/user-dashboard');
-                // Déclencher l'événement après un court délai pour que la navigation soit en cours
-                setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('userLoggedIn'));
-                }, 50);
-              });
+              // Marquer qu'une navigation est en cours pour empêcher les composants de réagir
+              window.__isNavigating = true;
+              // Naviguer immédiatement
+              window.location.href = '/user-dashboard';
             } else {
               router.replace('/user-dashboard');
             }

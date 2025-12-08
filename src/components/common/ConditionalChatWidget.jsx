@@ -22,8 +22,11 @@ export default function ConditionalChatWidget() {
 
     // Écouter les changements d'authentification
     const handleAuthChange = () => {
+      // Ne pas réagir si une navigation est en cours
+      if (window.__isNavigating) return;
       // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
       setTimeout(() => {
+        if (window.__isNavigating) return;
         setIsAuthenticated(checkAuth());
       }, 0);
     };
@@ -33,6 +36,8 @@ export default function ConditionalChatWidget() {
 
     // Écouter les changements dans localStorage
     const handleStorageChange = (e) => {
+      // Ne pas réagir si une navigation est en cours
+      if (window.__isNavigating) return;
       if (e.key === 'user' || e.key === null) {
         setIsAuthenticated(checkAuth());
       }

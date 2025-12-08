@@ -19,6 +19,8 @@ export default function UserAccountMenu() {
 
   const checkAuth = (skipRegister = false) => {
     if (typeof window === 'undefined') return;
+    // Vérifier qu'une navigation n'est pas en cours
+    if (window.__isNavigating) return;
     // Vérifier que le composant est toujours monté avant de mettre à jour l'état
     if (!isMountedRef.current) return;
     
@@ -80,11 +82,12 @@ export default function UserAccountMenu() {
     
     // Écouter les événements de connexion/déconnexion
     const handleAuthChange = () => {
+      // Ne pas réagir si une navigation est en cours
+      if (window.__isNavigating) return;
       // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
       setTimeout(() => {
-        if (isMountedRef.current) {
-          checkAuth(true); // Skip register lors des changements d'auth
-        }
+        if (window.__isNavigating || !isMountedRef.current) return;
+        checkAuth(true); // Skip register lors des changements d'auth
       }, 0);
     };
     
@@ -94,6 +97,8 @@ export default function UserAccountMenu() {
     
     // Écouter les changements dans localStorage pour détecter les connexions
     const handleStorageChange = (e) => {
+      // Ne pas réagir si une navigation est en cours
+      if (window.__isNavigating) return;
       // Seulement si c'est la clé 'user' qui change
       if (e.key === 'user' || e.key === null) {
         checkAuth(true);
@@ -104,6 +109,8 @@ export default function UserAccountMenu() {
     
     // Vérifier périodiquement (toutes les 2 secondes) pour détecter les changements dans le même onglet
     const intervalId = setInterval(() => {
+      // Ne pas vérifier si une navigation est en cours ou si le composant n'est plus monté
+      if (window.__isNavigating || !isMountedRef.current) return;
       checkAuth(true);
     }, 2000);
     

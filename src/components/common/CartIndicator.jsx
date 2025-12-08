@@ -13,14 +13,16 @@ export default function CartIndicator() {
 
   const updateCartCount = async () => {
     if (typeof window === 'undefined' || !mounted || !isMountedRef.current) return;
+    // Ne pas mettre à jour si une navigation est en cours
+    if (window.__isNavigating) return;
     
     try {
       const totalQuantity = await getCartTotalQuantity();
-      if (!isMountedRef.current) return;
+      if (window.__isNavigating || !isMountedRef.current) return;
       setCartCount(totalQuantity);
     } catch (error) {
       console.error('Erreur lors de la mise à jour du compteur:', error);
-      if (!isMountedRef.current) return;
+      if (window.__isNavigating || !isMountedRef.current) return;
       setCartCount(0);
     }
   };
@@ -40,16 +42,17 @@ export default function CartIndicator() {
     updateCartCount();
 
     const handleCartUpdate = async () => {
+      // Ne pas réagir si une navigation est en cours
+      if (window.__isNavigating) return;
       // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
       setTimeout(async () => {
-        if (!mounted || !isMountedRef.current) return;
+        if (window.__isNavigating || !mounted || !isMountedRef.current) return;
         await updateCartCount();
-        if (!mounted || !isMountedRef.current) return;
+        if (window.__isNavigating || !mounted || !isMountedRef.current) return;
         setIsAnimating(true);
         setTimeout(() => {
-          if (mounted && isMountedRef.current) {
-            setIsAnimating(false);
-          }
+          if (window.__isNavigating || !mounted || !isMountedRef.current) return;
+          setIsAnimating(false);
         }, 300);
       }, 0);
     };

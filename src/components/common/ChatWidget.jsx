@@ -130,6 +130,8 @@ export default function ChatWidget() {
     let subscription = null;
     if (checkAuth()) {
       subscribeToChatMessages((newMessage) => {
+        // Ne pas réagir si une navigation est en cours
+        if (window.__isNavigating) return;
         // Vérifier l'authentification avant d'ajouter le message
         if (!checkAuth()) {
           return;
@@ -153,9 +155,11 @@ export default function ChatWidget() {
     
     // Écouter les changements d'authentification
     const handleAuthChange = () => {
+      // Ne pas réagir si une navigation est en cours
+      if (window.__isNavigating) return;
       // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
       setTimeout(() => {
-        if (!mounted) return;
+        if (window.__isNavigating || !mounted) return;
         const authStatus = checkAuth();
         setIsAuthenticated(authStatus);
         if (!authStatus) {

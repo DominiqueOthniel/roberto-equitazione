@@ -19,6 +19,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="it" className="h-full">
       <body className="min-h-screen flex flex-col">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Réinitialiser le flag de navigation au chargement de la page
+              if (typeof window !== 'undefined') {
+                window.__isNavigating = false;
+              }
+            `,
+          }}
+        />
         <ConditionalHeader />
         <ConditionalMain>
           {children}

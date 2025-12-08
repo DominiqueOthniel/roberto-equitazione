@@ -37,6 +37,8 @@ export default function ShoppingCartPage() {
 
     // Listen for cart updates from other components (fallback)
     const handleCartUpdate = () => {
+      // Ne pas réagir si une navigation est en cours
+      if (window.__isNavigating) return;
       loadCart();
     };
 
