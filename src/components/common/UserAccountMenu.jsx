@@ -80,7 +80,12 @@ export default function UserAccountMenu() {
     
     // Écouter les événements de connexion/déconnexion
     const handleAuthChange = () => {
-      checkAuth(true); // Skip register lors des changements d'auth
+      // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          checkAuth(true); // Skip register lors des changements d'auth
+        }
+      }, 0);
     };
     
     // Écouter les événements personnalisés

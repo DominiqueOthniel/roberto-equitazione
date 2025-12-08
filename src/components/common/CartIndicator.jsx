@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import { getCartTotalQuantity } from '@/utils/cart-supabase';
@@ -9,21 +9,29 @@ export default function CartIndicator() {
   const [cartCount, setCartCount] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const isMountedRef = useRef(false);
 
   const updateCartCount = async () => {
-    if (typeof window === 'undefined' || !mounted) return;
+    if (typeof window === 'undefined' || !mounted || !isMountedRef.current) return;
     
     try {
       const totalQuantity = await getCartTotalQuantity();
+      if (!isMountedRef.current) return;
       setCartCount(totalQuantity);
     } catch (error) {
       console.error('Erreur lors de la mise à jour du compteur:', error);
+      if (!isMountedRef.current) return;
       setCartCount(0);
     }
   };
 
   useEffect(() => {
     setMounted(true);
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -32,9 +40,18 @@ export default function CartIndicator() {
     updateCartCount();
 
     const handleCartUpdate = async () => {
-      await updateCartCount();
-      setIsAnimating(true);
-      setTimeout(() => setIsAnimating(false), 300);
+      // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
+      setTimeout(async () => {
+        if (!mounted || !isMountedRef.current) return;
+        await updateCartCount();
+        if (!mounted || !isMountedRef.current) return;
+        setIsAnimating(true);
+        setTimeout(() => {
+          if (mounted && isMountedRef.current) {
+            setIsAnimating(false);
+          }
+        }, 300);
+      }, 0);
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);

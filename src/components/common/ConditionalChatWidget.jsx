@@ -22,7 +22,10 @@ export default function ConditionalChatWidget() {
 
     // Écouter les changements d'authentification
     const handleAuthChange = () => {
-      setIsAuthenticated(checkAuth());
+      // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
+      setTimeout(() => {
+        setIsAuthenticated(checkAuth());
+      }, 0);
     };
 
     window.addEventListener('userLoggedIn', handleAuthChange);

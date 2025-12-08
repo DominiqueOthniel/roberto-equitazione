@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -94,15 +94,17 @@ export default function LoginPage() {
           );
         }
 
-        // Déclencher un événement pour notifier les composants de la connexion
+        // Rediriger immédiatement, l'événement sera déclenché après la navigation
+        // Les composants détecteront le changement via localStorage
         if (typeof window !== 'undefined') {
-          // Utiliser requestAnimationFrame pour s'assurer que les mises à jour DOM sont terminées
-          requestAnimationFrame(() => {
-            window.dispatchEvent(new CustomEvent('userLoggedIn'));
-            // Attendre un délai plus long pour permettre aux composants de se mettre à jour avant la redirection
+          // Utiliser startTransition pour les mises à jour non urgentes
+          startTransition(() => {
+            // Rediriger d'abord
+            router.replace('/user-dashboard');
+            // Déclencher l'événement après un court délai pour que la navigation soit en cours
             setTimeout(() => {
-              router.replace('/user-dashboard');
-            }, 200);
+              window.dispatchEvent(new CustomEvent('userLoggedIn'));
+            }, 50);
           });
         } else {
           router.replace('/user-dashboard');
@@ -140,15 +142,17 @@ export default function LoginPage() {
               console.log('✅ Email de synchronisation sauvegardé:', customer.email);
             }
             
-            // Déclencher un événement pour notifier les composants de la connexion
+            // Rediriger immédiatement, l'événement sera déclenché après la navigation
+            // Les composants détecteront le changement via localStorage
             if (typeof window !== 'undefined') {
-              // Utiliser requestAnimationFrame pour s'assurer que les mises à jour DOM sont terminées
-              requestAnimationFrame(() => {
-                window.dispatchEvent(new CustomEvent('userLoggedIn'));
-                // Attendre un délai plus long pour permettre aux composants de se mettre à jour avant la redirection
+              // Utiliser startTransition pour les mises à jour non urgentes
+              startTransition(() => {
+                // Rediriger d'abord
+                router.replace('/user-dashboard');
+                // Déclencher l'événement après un court délai pour que la navigation soit en cours
                 setTimeout(() => {
-                  router.replace('/user-dashboard');
-                }, 200);
+                  window.dispatchEvent(new CustomEvent('userLoggedIn'));
+                }, 50);
               });
             } else {
               router.replace('/user-dashboard');

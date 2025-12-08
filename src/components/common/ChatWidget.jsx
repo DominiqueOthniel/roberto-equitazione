@@ -153,16 +153,20 @@ export default function ChatWidget() {
     
     // Écouter les changements d'authentification
     const handleAuthChange = () => {
-      const authStatus = checkAuth();
-      setIsAuthenticated(authStatus);
-      if (!authStatus) {
-        if (isOpen) {
-          setIsOpen(false);
+      // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
+      setTimeout(() => {
+        if (!mounted) return;
+        const authStatus = checkAuth();
+        setIsAuthenticated(authStatus);
+        if (!authStatus) {
+          if (isOpen) {
+            setIsOpen(false);
+          }
+          // Vider les messages si l'utilisateur se déconnecte
+          setMessages([]);
+          router.replace('/login');
         }
-        // Vider les messages si l'utilisateur se déconnecte
-        setMessages([]);
-        router.replace('/login');
-      }
+      }, 0);
     };
     
     window.addEventListener('userLoggedIn', handleAuthChange);
