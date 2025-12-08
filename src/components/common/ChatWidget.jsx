@@ -64,8 +64,16 @@ export default function ChatWidget() {
     
     // Vérifier l'authentification avant de charger les messages
     if (!checkAuth()) {
+      setIsAuthenticated(false);
+      // Fermer le chat s'il est ouvert
+      if (isOpen) {
+        setIsOpen(false);
+        router.push('/login');
+      }
       return;
     }
+    
+    setIsAuthenticated(true);
 
     // Charger les messages depuis Supabase
     const loadMessages = async () => {
@@ -106,7 +114,8 @@ export default function ChatWidget() {
     const handleOpenChat = () => {
       // Vérifier l'authentification avant d'ouvrir le chat
       if (!checkAuth()) {
-        router.push('/login');
+        setIsAuthenticated(false);
+        router.replace('/login');
         return;
       }
       setIsAuthenticated(true);
@@ -117,18 +126,26 @@ export default function ChatWidget() {
     // Charger les messages au montage
     loadMessages();
 
-    // S'abonner aux messages en temps réel
+    // S'abonner aux messages en temps réel seulement si authentifié
     let subscription = null;
-    subscribeToChatMessages((newMessage) => {
-      setMessages(prev => {
-        // Vérifier si le message existe déjà
-        const exists = prev.some(m => m.id === newMessage.id);
-        if (exists) return prev;
-        return [...prev, newMessage];
+    if (checkAuth()) {
+      subscribeToChatMessages((newMessage) => {
+        // Vérifier l'authentification avant d'ajouter le message
+        if (!checkAuth()) {
+          return;
+        }
+        setMessages(prev => {
+          // Vérifier si le message existe déjà
+          const exists = prev.some(m => m.id === newMessage.id);
+          if (exists) return prev;
+          return [...prev, newMessage];
+        });
+      }).then((channel) => {
+        subscription = channel;
+      }).catch((error) => {
+        console.error('Erreur lors de l\'abonnement aux messages:', error);
       });
-    }).then((channel) => {
-      subscription = channel;
-    });
+    }
 
     // Écouter les événements personnalisés
     window.addEventListener('newAdminMessage', handleAdminMessage);
@@ -138,9 +155,13 @@ export default function ChatWidget() {
     const handleAuthChange = () => {
       const authStatus = checkAuth();
       setIsAuthenticated(authStatus);
-      if (!authStatus && isOpen) {
-        setIsOpen(false);
-        router.push('/login');
+      if (!authStatus) {
+        if (isOpen) {
+          setIsOpen(false);
+        }
+        // Vider les messages si l'utilisateur se déconnecte
+        setMessages([]);
+        router.replace('/login');
       }
     };
     
@@ -161,7 +182,8 @@ export default function ChatWidget() {
   const toggleChat = () => {
     // Vérifier l'authentification avant d'ouvrir le chat
     if (!checkAuth()) {
-      router.push('/login');
+      setIsAuthenticated(false);
+      router.replace('/login');
       return;
     }
     setIsAuthenticated(true);
@@ -175,8 +197,9 @@ export default function ChatWidget() {
 
   const handleSendMessage = async () => {
     // Vérifier l'authentification avant d'envoyer un message
-    if (!checkAuth()) {
-      router.push('/login');
+    if (!checkAuth() || !isAuthenticated) {
+      setIsOpen(false);
+      router.replace('/login');
       return;
     }
     
@@ -193,9 +216,24 @@ export default function ChatWidget() {
       // Ajouter immédiatement au state pour un feedback instantané
       setMessages(prev => [...prev, newMessage]);
       
-      // Envoyer à Supabase
+      // Envoyer à Supabase seulement si toujours authentifié
+      if (!checkAuth()) {
+        setIsOpen(false);
+        router.replace('/login');
+        // Retirer le message du state
+        setMessages(prev => prev.filter(msg => msg.id !== newMessage.id));
+        return;
+      }
+      
       try {
         const savedMessage = await sendChatMessage(newMessage);
+        
+        // Vérifier à nouveau l'authentification après l'envoi
+        if (!checkAuth()) {
+          setIsOpen(false);
+          router.replace('/login');
+          return;
+        }
         
         // Remplacer le message temporaire par celui de Supabase
         if (savedMessage && savedMessage.id !== newMessage.id) {
@@ -213,6 +251,11 @@ export default function ChatWidget() {
         );
       } catch (error) {
         console.error('Erreur lors de l\'envoi du message:', error);
+        // Si l'erreur est due à un manque d'authentification, rediriger
+        if (error.message?.includes('auth') || error.message?.includes('unauthorized')) {
+          setIsOpen(false);
+          router.replace('/login');
+        }
       }
       
       setInputValue('');
@@ -233,8 +276,9 @@ export default function ChatWidget() {
 
   const handleImageSelect = (e) => {
     // Vérifier l'authentification avant de sélectionner une image
-    if (!checkAuth()) {
-      router.push('/login');
+    if (!checkAuth() || !isAuthenticated) {
+      setIsOpen(false);
+      router.replace('/login');
       return;
     }
     
@@ -273,6 +317,11 @@ export default function ChatWidget() {
       minute: '2-digit',
     });
   };
+
+  // Ne rien afficher si l'utilisateur n'est pas authentifié
+  if (!isAuthenticated && mounted) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-6 right-6 z-400">

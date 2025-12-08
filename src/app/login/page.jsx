@@ -96,13 +96,17 @@ export default function LoginPage() {
 
         // Déclencher un événement pour notifier les composants de la connexion
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('userLoggedIn'));
+          // Utiliser requestAnimationFrame pour s'assurer que les mises à jour DOM sont terminées
+          requestAnimationFrame(() => {
+            window.dispatchEvent(new CustomEvent('userLoggedIn'));
+            // Attendre un délai plus long pour permettre aux composants de se mettre à jour avant la redirection
+            setTimeout(() => {
+              router.replace('/user-dashboard');
+            }, 200);
+          });
+        } else {
+          router.replace('/user-dashboard');
         }
-
-        // Attendre un court délai pour permettre aux composants de se mettre à jour avant la redirection
-        setTimeout(() => {
-          router.push('/user-dashboard');
-        }, 100);
       } else {
         // Utilisateur existant - connexion
         if (!formData.email || !formData.password) {
@@ -138,13 +142,17 @@ export default function LoginPage() {
             
             // Déclencher un événement pour notifier les composants de la connexion
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('userLoggedIn'));
+              // Utiliser requestAnimationFrame pour s'assurer que les mises à jour DOM sont terminées
+              requestAnimationFrame(() => {
+                window.dispatchEvent(new CustomEvent('userLoggedIn'));
+                // Attendre un délai plus long pour permettre aux composants de se mettre à jour avant la redirection
+                setTimeout(() => {
+                  router.replace('/user-dashboard');
+                }, 200);
+              });
+            } else {
+              router.replace('/user-dashboard');
             }
-            
-            // Attendre un court délai pour permettre aux composants de se mettre à jour avant la redirection
-            setTimeout(() => {
-              router.push('/user-dashboard');
-            }, 100);
             return;
           }
         }
