@@ -20,3 +20,4 @@ COMMENT ON COLUMN customers.password_hash IS 'Hash SHA-256 du mot de passe du cl
 SELECT '✅ Colonne password_hash ajoutée à la table customers' AS status;
 
 
+

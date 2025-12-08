@@ -54,3 +54,4 @@ END $$;
 3. Vérifiez dans Application → Local Storage si `cart` existe
 
 
+

@@ -133,3 +133,4 @@ Si vous recevez une erreur "Storage quota exceeded" :
 - [Pricing Supabase](https://supabase.com/pricing)
 - [Guide d'optimisation d'images](https://web.dev/fast/#optimize-your-images)
 
+

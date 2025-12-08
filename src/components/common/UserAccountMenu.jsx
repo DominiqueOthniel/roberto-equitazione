@@ -15,15 +15,21 @@ export default function UserAccountMenu() {
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
   const isRegisteringRef = useRef(false);
+  const isMountedRef = useRef(false);
 
   const checkAuth = (skipRegister = false) => {
     if (typeof window === 'undefined') return;
+    // Vérifier que le composant est toujours monté avant de mettre à jour l'état
+    if (!isMountedRef.current) return;
     
     const user = localStorage.getItem('user');
     if (user) {
       try {
         const userData = JSON.parse(user);
+        // Vérifier à nouveau que le composant est monté avant chaque setState
+        if (!isMountedRef.current) return;
         setIsAuthenticated(true);
+        if (!isMountedRef.current) return;
         setUserName(userData?.name || 'Utente');
         
         // Sauvegarder l'email pour la synchronisation entre appareils
@@ -46,10 +52,13 @@ export default function UserAccountMenu() {
           }, 1000);
         }
       } catch (error) {
+        if (!isMountedRef.current) return;
         setIsAuthenticated(false);
       }
     } else {
+      if (!isMountedRef.current) return;
       setIsAuthenticated(false);
+      if (!isMountedRef.current) return;
       setUserName('');
     }
   };
@@ -57,6 +66,11 @@ export default function UserAccountMenu() {
   useEffect(() => {
     // Marquer comme monté pour éviter les erreurs d'hydratation
     setIsMounted(true);
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -101,6 +115,9 @@ export default function UserAccountMenu() {
     if (!isOpen) return;
 
     const handleClickOutside = (event) => {
+      // Vérifier que le composant est toujours monté
+      if (!isMountedRef.current) return;
+      
       // Vérifier que le clic n'est pas sur le bouton ou dans le menu
       const target = event?.target;
       if (

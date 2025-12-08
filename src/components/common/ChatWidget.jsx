@@ -1,20 +1,31 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import { createNotification } from '@/utils/notifications';
 import { getChatMessages, sendChatMessage, subscribeToChatMessages } from '@/utils/chat-supabase';
 
 export default function ChatWidget() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // Set mounted flag
+  // Vérifier l'authentification
+  const checkAuth = () => {
+    if (typeof window === 'undefined') return false;
+    const user = localStorage.getItem('user');
+    return !!user;
+  };
+
+  // Set mounted flag et vérifier l'authentification
   useEffect(() => {
     setMounted(true);
+    setIsAuthenticated(checkAuth());
   }, []);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -50,6 +61,11 @@ export default function ChatWidget() {
   // Charger et écouter les messages
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return;
+    
+    // Vérifier l'authentification avant de charger les messages
+    if (!checkAuth()) {
+      return;
+    }
 
     // Charger les messages depuis Supabase
     const loadMessages = async () => {
@@ -88,6 +104,12 @@ export default function ChatWidget() {
     };
 
     const handleOpenChat = () => {
+      // Vérifier l'authentification avant d'ouvrir le chat
+      if (!checkAuth()) {
+        router.push('/login');
+        return;
+      }
+      setIsAuthenticated(true);
       setIsOpen(true);
       setIsMinimized(false);
     };
@@ -111,6 +133,19 @@ export default function ChatWidget() {
     // Écouter les événements personnalisés
     window.addEventListener('newAdminMessage', handleAdminMessage);
     window.addEventListener('openChat', handleOpenChat);
+    
+    // Écouter les changements d'authentification
+    const handleAuthChange = () => {
+      const authStatus = checkAuth();
+      setIsAuthenticated(authStatus);
+      if (!authStatus && isOpen) {
+        setIsOpen(false);
+        router.push('/login');
+      }
+    };
+    
+    window.addEventListener('userLoggedIn', handleAuthChange);
+    window.addEventListener('userLoggedOut', handleAuthChange);
 
     return () => {
       if (subscription) {
@@ -118,10 +153,18 @@ export default function ChatWidget() {
       }
       window.removeEventListener('newAdminMessage', handleAdminMessage);
       window.removeEventListener('openChat', handleOpenChat);
+      window.removeEventListener('userLoggedIn', handleAuthChange);
+      window.removeEventListener('userLoggedOut', handleAuthChange);
     };
-  }, [mounted]);
+  }, [mounted, isOpen, router]);
 
   const toggleChat = () => {
+    // Vérifier l'authentification avant d'ouvrir le chat
+    if (!checkAuth()) {
+      router.push('/login');
+      return;
+    }
+    setIsAuthenticated(true);
     setIsOpen(!isOpen);
     setIsMinimized(false);
   };
@@ -131,6 +174,12 @@ export default function ChatWidget() {
   };
 
   const handleSendMessage = async () => {
+    // Vérifier l'authentification avant d'envoyer un message
+    if (!checkAuth()) {
+      router.push('/login');
+      return;
+    }
+    
     if (inputValue?.trim() || selectedImage) {
       const now = new Date();
       const newMessage = {
@@ -183,6 +232,12 @@ export default function ChatWidget() {
   };
 
   const handleImageSelect = (e) => {
+    // Vérifier l'authentification avant de sélectionner une image
+    if (!checkAuth()) {
+      router.push('/login');
+      return;
+    }
+    
     const file = e?.target?.files?.[0];
     if (file) {
       setSelectedImage(file);

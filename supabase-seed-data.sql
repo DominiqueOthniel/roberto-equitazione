@@ -299,3 +299,4 @@ UNION ALL
 SELECT 'chat_messages', COUNT(*) FROM chat_messages;
 
 
+

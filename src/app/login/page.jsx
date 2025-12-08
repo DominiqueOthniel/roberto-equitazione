@@ -99,8 +99,10 @@ export default function LoginPage() {
           window.dispatchEvent(new CustomEvent('userLoggedIn'));
         }
 
-        // Rediriger vers le dashboard
-        router.push('/user-dashboard');
+        // Attendre un court délai pour permettre aux composants de se mettre à jour avant la redirection
+        setTimeout(() => {
+          router.push('/user-dashboard');
+        }, 100);
       } else {
         // Utilisateur existant - connexion
         if (!formData.email || !formData.password) {
@@ -139,7 +141,10 @@ export default function LoginPage() {
               window.dispatchEvent(new CustomEvent('userLoggedIn'));
             }
             
-            router.push('/user-dashboard');
+            // Attendre un court délai pour permettre aux composants de se mettre à jour avant la redirection
+            setTimeout(() => {
+              router.push('/user-dashboard');
+            }, 100);
             return;
           }
         }

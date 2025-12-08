@@ -82,3 +82,4 @@ WHERE table_name = 'user_carts'
 AND column_name = 'user_id';
 
 
+
