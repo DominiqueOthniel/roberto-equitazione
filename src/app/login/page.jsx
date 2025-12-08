@@ -71,6 +71,19 @@ export default function LoginPage() {
           isVerified: false
         };
 
+        // NETTOYER ET DÉFINIR LE FLAG AVANT localStorage
+        if (typeof window !== 'undefined') {
+          // Nettoyer tous les intervals AVANT de définir le flag
+          if (window.__trackedIntervals) {
+            window.__trackedIntervals.forEach(intervalId => {
+              clearInterval(intervalId);
+            });
+            window.__trackedIntervals.clear();
+          }
+          // Définir le flag pour empêcher les composants de réagir
+          window.__isNavigating = true;
+        }
+
         // Sauvegarder l'utilisateur dans localStorage
         localStorage.setItem('user', JSON.stringify(newUser));
         
@@ -130,6 +143,20 @@ export default function LoginPage() {
             memberSince: customer.memberSince || new Date().toLocaleDateString('it-IT'),
             isVerified: customer.isVerified || false
           };
+
+          // NETTOYER ET DÉFINIR LE FLAG AVANT localStorage
+          if (typeof window !== 'undefined') {
+            // Nettoyer tous les intervals AVANT de définir le flag
+            if (window.__trackedIntervals) {
+              window.__trackedIntervals.forEach(intervalId => {
+                clearInterval(intervalId);
+              });
+              window.__trackedIntervals.clear();
+            }
+            // Définir le flag pour empêcher les composants de réagir
+            window.__isNavigating = true;
+          }
+
           localStorage.setItem('user', JSON.stringify(userData));
           
           // Sauvegarder l'email pour la synchronisation entre appareils
