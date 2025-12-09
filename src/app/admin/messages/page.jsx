@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import Image from 'next/image';
-import { getAllChatMessages, subscribeToAllChatMessages, sendAdminReply } from '@/utils/chat-supabase';
+import { getAllChatMessages, subscribeToAllChatMessages, sendAdminReply, deleteChatMessages } from '@/utils/chat-supabase';
 
 // Fonction pour charger les conversations depuis Supabase
 const loadConversationsFromSupabase = async () => {
@@ -379,6 +379,7 @@ export default function AdminMessagesPage() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [replyText, setReplyText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -387,6 +388,21 @@ export default function AdminMessagesPage() {
     let subscription = null;
     subscribeToAllChatMessages((newMessage) => {
       console.log('⚡️ [Admin] Nouveau message reçu:', newMessage);
+      
+      // Créer une notification immédiatement si c'est un message client
+      if (newMessage.sender === 'user' || newMessage.sender === 'customer') {
+        const { createNotification } = require('@/utils/notifications');
+        createNotification(
+          'message',
+          'Nouveau message',
+          newMessage.text || 'Image partagée',
+          { 
+            messageId: newMessage.id,
+            userEmail: newMessage.user_email || 'client'
+          }
+        );
+      }
+      
       // Recharger les conversations quand un nouveau message arrive
       loadConversations();
     }).then((channel) => {
@@ -410,24 +426,23 @@ export default function AdminMessagesPage() {
     if (loaded.length > 0) {
       setConversations(loaded);
       
-      // Si aucune conversation n'est sélectionnée et qu'il y a des conversations, sélectionner la première
-      if (!selectedConversation && loaded.length > 0) {
-        setSelectedConversation(loaded[0]);
-      }
-      
       // Si une conversation est sélectionnée, la mettre à jour
       if (selectedConversation) {
         const updated = loaded.find(c => c.id === selectedConversation.id);
         if (updated) {
+          // Mettre à jour la conversation sélectionnée sans changer de conversation
           setSelectedConversation(updated);
-        } else if (loaded.length > 0) {
-          // Si la conversation sélectionnée n'existe plus, sélectionner la première disponible
-          setSelectedConversation(loaded[0]);
         }
+        // NE PAS changer de conversation si celle sélectionnée n'existe plus
+        // L'admin peut choisir manuellement une autre conversation
+      } else if (loaded.length > 0) {
+        // Seulement si aucune conversation n'est sélectionnée, sélectionner la première
+        setSelectedConversation(loaded[0]);
       }
     } else {
       // Aucune conversation trouvée
       setConversations([]);
+      setSelectedConversation(null);
     }
   };
 
@@ -704,6 +719,33 @@ export default function AdminMessagesPage() {
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-body font-semibold ${getPriorityColor(selectedConversation.priority)}`}>
                         {selectedConversation.priority === 'high' ? 'Alta' : selectedConversation.priority === 'normal' ? 'Normale' : 'Bassa'}
                       </span>
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Sei sicuro di voler eliminare questa conversazione? Questa azione è irreversibile.')) {
+                            return;
+                          }
+                          setIsDeleting(true);
+                          try {
+                            await deleteChatMessages(selectedConversation.customer.email);
+                            // Recharger les conversations
+                            await loadConversations();
+                            setSelectedConversation(null);
+                            alert('Conversazione eliminata con successo.');
+                          } catch (error) {
+                            console.error('Erreur lors de la suppression:', error);
+                            alert('Errore durante l\'eliminazione. Riprova.');
+                          } finally {
+                            setIsDeleting(false);
+                          }
+                        }}
+                        disabled={isDeleting}
+                        className="p-2 text-error hover:bg-error/10 rounded-md transition-fast disabled:opacity-50"
+                        title="Elimina conversazione"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                   <div>
