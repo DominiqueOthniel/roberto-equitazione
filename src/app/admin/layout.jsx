@@ -111,11 +111,6 @@ export default function AdminLayout({ children }) {
       icon: 'UsersIcon',
     },
     {
-      label: 'Messaggi',
-      href: '/admin/messages',
-      icon: 'ChatBubbleLeftRightIcon',
-    },
-    {
       label: 'Recensioni',
       href: '/admin/reviews',
       icon: 'StarIcon',

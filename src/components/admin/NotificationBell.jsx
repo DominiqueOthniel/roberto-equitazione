@@ -50,16 +50,6 @@ export default function NotificationBell() {
       }
     };
     
-    const handleNewMessage = () => {
-      // Recharger immédiatement quand un nouveau message arrive
-      if (isMobile) {
-        requestAnimationFrame(() => {
-          setTimeout(() => loadNotifications(), 50);
-        });
-      } else {
-        setTimeout(() => loadNotifications(), 100);
-      }
-    };
     
     const handleNewNotification = (e) => {
       // Recharger immédiatement quand une nouvelle notification est créée
@@ -96,7 +86,6 @@ export default function NotificationBell() {
     
     // Écouter les événements personnalisés (ceux-ci fonctionnent dans le même onglet)
     window.addEventListener('newOrder', handleNewOrder);
-    window.addEventListener('newMessage', handleNewMessage);
     window.addEventListener('newNotification', handleNewNotification);
     window.addEventListener('notificationUpdated', handleNotificationUpdated);
     
@@ -111,7 +100,6 @@ export default function NotificationBell() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('newOrder', handleNewOrder);
-      window.removeEventListener('newMessage', handleNewMessage);
       window.removeEventListener('newNotification', handleNewNotification);
       window.removeEventListener('notificationUpdated', handleNotificationUpdated);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -172,12 +160,8 @@ export default function NotificationBell() {
     if (notification.type === 'order') {
       return `/admin/orders${notification.orderId ? `#${notification.orderId}` : ''}`;
     }
-    if (notification.type === 'message') {
-      // Si c'est une notification de nouveau client, rediriger vers customers
-      if (notification.customerId && notification.type === 'customer_registration') {
-        return `/admin/customers${notification.customerId ? `#${notification.customerId}` : ''}`;
-      }
-      return `/admin/messages${notification.messageId ? `#${notification.messageId}` : ''}`;
+    if (notification.type === 'customer' || notification.type === 'customer_registration') {
+      return `/admin/customers${notification.customerId ? `#${notification.customerId}` : ''}`;
     }
     return '/admin';
   };
