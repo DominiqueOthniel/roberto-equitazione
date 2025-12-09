@@ -29,20 +29,36 @@ export function createNotification(type, title, message, metadata = {}) {
     
     localStorage.setItem('adminNotifications', JSON.stringify(limited));
     
-    // Déclencher un événement pour mettre à jour les composants
-    // Utiliser setTimeout(0) pour s'assurer que l'événement est déclenché après la mise à jour du localStorage
+    // Déclencher un événement personnalisé pour mettre à jour les composants dans le même onglet
+    // C'est celui-ci qui est le plus important pour la réactivité
+    // Utiliser setTimeout pour s'assurer que localStorage est bien mis à jour avant
     setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('newNotification', { detail: newNotification }));
+      window.dispatchEvent(new CustomEvent('newNotification', { 
+        detail: newNotification,
+        bubbles: true,
+        cancelable: true
+      }));
       
       // Déclencher aussi un événement spécifique selon le type
       if (type === 'order') {
-        window.dispatchEvent(new CustomEvent('newOrder'));
+        window.dispatchEvent(new CustomEvent('newOrder', {
+          detail: newNotification,
+          bubbles: true,
+          cancelable: true
+        }));
       } else if (type === 'message') {
-        window.dispatchEvent(new CustomEvent('newMessage'));
+        window.dispatchEvent(new CustomEvent('newMessage', {
+          detail: newNotification,
+          bubbles: true,
+          cancelable: true
+        }));
       }
       
-      // Déclencher aussi notificationUpdated pour forcer la mise à jour
-      window.dispatchEvent(new CustomEvent('notificationUpdated'));
+      // Déclencher aussi un événement de mise à jour générale
+      window.dispatchEvent(new CustomEvent('notificationUpdated', {
+        bubbles: true,
+        cancelable: true
+      }));
     }, 0);
     
     return newNotification;

@@ -234,18 +234,6 @@ export default function ChatWidget() {
       }
       
       try {
-        // Récupérer l'email de l'utilisateur AVANT l'envoi pour la notification
-        let userEmail = 'client';
-        try {
-          const user = localStorage.getItem('user');
-          if (user) {
-            const userData = JSON.parse(user);
-            userEmail = userData.email || 'client';
-          }
-        } catch (e) {
-          console.warn('Impossible de récupérer l\'email utilisateur:', e);
-        }
-        
         const savedMessage = await sendChatMessage(newMessage);
         
         // Vérifier à nouveau l'authentification après l'envoi
@@ -262,15 +250,12 @@ export default function ChatWidget() {
           ));
         }
         
-        // Créer une notification pour l'admin IMMÉDIATEMENT (synchrone)
+        // Créer une notification pour l'admin
         createNotification(
           'message',
           'Nouveau message',
           newMessage.text || 'Image partagée',
-          { 
-            messageId: savedMessage?.id || newMessage.id,
-            userEmail: userEmail
-          }
+          { messageId: savedMessage?.id || newMessage.id }
         );
       } catch (error) {
         console.error('Erreur lors de l\'envoi du message:', error);

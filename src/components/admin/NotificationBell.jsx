@@ -27,34 +27,47 @@ export default function NotificationBell() {
     loadNotifications();
     
     // Écouter les nouvelles notifications
-    const handleStorageChange = () => {
-      loadNotifications();
+    const handleStorageChange = (e) => {
+      // L'événement storage ne se déclenche que dans d'autres onglets
+      // Mais on l'écoute quand même pour la synchronisation multi-onglets
+      if (e.key === 'adminNotifications' || e.key === null) {
+        loadNotifications();
+      }
     };
     
     const handleNewOrder = () => {
-      loadNotifications();
+      // Recharger immédiatement quand un nouvel ordre est créé
+      setTimeout(() => loadNotifications(), 100);
     };
     
     const handleNewMessage = () => {
-      loadNotifications();
+      // Recharger immédiatement quand un nouveau message arrive
+      setTimeout(() => loadNotifications(), 100);
     };
     
-    const handleNewNotification = () => {
-      loadNotifications();
+    const handleNewNotification = (e) => {
+      // Recharger immédiatement quand une nouvelle notification est créée
+      // L'événement peut contenir les détails de la notification dans e.detail
+      setTimeout(() => loadNotifications(), 100);
     };
     
     const handleNotificationUpdated = () => {
+      // Recharger quand une notification est mise à jour
       loadNotifications();
     };
     
+    // Écouter l'événement storage pour la synchronisation multi-onglets
     window.addEventListener('storage', handleStorageChange);
+    
+    // Écouter les événements personnalisés (ceux-ci fonctionnent dans le même onglet)
     window.addEventListener('newOrder', handleNewOrder);
     window.addEventListener('newMessage', handleNewMessage);
     window.addEventListener('newNotification', handleNewNotification);
     window.addEventListener('notificationUpdated', handleNotificationUpdated);
     
-    // Vérifier périodiquement les nouvelles notifications
-    const interval = setInterval(loadNotifications, 5000);
+    // Vérifier périodiquement les nouvelles notifications (backup)
+    // Intervalle réduit à 2 secondes pour une meilleure réactivité
+    const interval = setInterval(loadNotifications, 2000);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
