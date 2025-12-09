@@ -1,6 +1,5 @@
 import '@/styles/index.css';
 import ConditionalHeader from '@/components/common/ConditionalHeader';
-import ConditionalChatWidget from '@/components/common/ConditionalChatWidget';
 import ConditionalMain from '@/components/common/ConditionalMain';
 import ConditionalFooter from '@/components/common/ConditionalFooter';
 import NavigationInitializer from '@/components/common/NavigationInitializer';
@@ -28,7 +27,6 @@ export default function RootLayout({ children }) {
             {children}
           </ConditionalMain>
           <ConditionalFooter />
-          <ConditionalChatWidget />
         </ErrorBoundary>
       </body>
     </html>

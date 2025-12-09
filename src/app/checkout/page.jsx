@@ -5,9 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getCart, saveCart } from '@/utils/cart-supabase';
-import { registerCustomer, updateCustomerOrderStats } from '@/utils/customers-supabase';
-import { createOrder } from '@/utils/orders-supabase';
-import { createNotification } from '@/utils/notifications';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -141,8 +138,61 @@ export default function CheckoutPage() {
     const orderSubtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const orderTotal = orderSubtotal; // Il prezzo è tutto incluso
 
-    // Save order data to localStorage (for demo purposes)
+    // Générer l'ID de commande
     const orderId = `ORD-${Date.now()}`;
+    const orderDate = new Date().toLocaleString('it-IT');
+    
+    // Formater les informations de commande pour l'email
+    const itemsList = orderItems.map((item, index) => {
+      return `${index + 1}. ${item.name}${item.brand ? ` (${item.brand})` : ''}
+   Quantità: ${item.quantity}
+   Prezzo unitario: ${item.price.toLocaleString('it-IT')} €
+   Totale: ${(item.price * item.quantity).toLocaleString('it-IT')} €`;
+    }).join('\n\n');
+
+    const emailSubject = encodeURIComponent(`Nuovo Ordine - ${orderId}`);
+    const emailBody = encodeURIComponent(`Ciao Roberto,
+
+Ho ricevuto un nuovo ordine sul sito web.
+
+DETTAGLI ORDINE:
+================
+ID Ordine: ${orderId}
+Data: ${orderDate}
+
+CLIENTE:
+========
+Nome: ${formData.nome} ${formData.cognome}
+Email: ${formData.email}
+Telefono: ${formData.telefono}
+
+INDIRIZZO DI SPEDIZIONE:
+========================
+Via: ${formData.via} ${formData.numeroCivico}
+Città: ${formData.citta}
+Provincia: ${formData.provincia}
+CAP: ${formData.cap}
+Paese: ${formData.paese}
+
+PRODOTTI ORDINATI:
+==================
+${itemsList}
+
+RIEPILOGO:
+==========
+Subtotale: ${orderSubtotal.toLocaleString('it-IT')} €
+Totale: ${orderTotal.toLocaleString('it-IT')} €
+
+Cordiali saluti,
+Sistema di ordinazione automatica`);
+
+    // Rediriger vers l'email avec les informations de commande
+    const emailUrl = `mailto:robertotavernar7@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+    
+    // Ouvrir le client de messagerie
+    window.location.href = emailUrl;
+    
+    // Sauvegarder la commande localement pour référence
     const orderData = {
       id: orderId,
       date: new Date(),
@@ -157,64 +207,25 @@ export default function CheckoutPage() {
       orderDate: new Date().toISOString()
     };
     
-    try {
-      // Créer l'ordre dans Supabase
-      const createdOrder = await createOrder({
-        order_id: orderId,
-        customer_name: `${formData.nome} ${formData.cognome}`,
-        customer_email: formData.email,
-        customer_phone: formData.telefono,
-        shipping_address: formData,
-        items: orderItems,
-        subtotal: orderSubtotal,
-        total: orderTotal,
-        status: 'pending',
-      });
-
-      // Salvare in currentOrder (per compatibilità)
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('currentOrder', JSON.stringify(orderData));
-      }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentOrder', JSON.stringify(orderData));
       
-      // Creare una notifica per l'admin
-      createNotification(
-        'order',
-        'Nuovo ordine',
-        `Ordine ${orderId} di ${formData.nome} ${formData.cognome} - ${orderTotal.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}`,
-        { orderId }
-      );
-      
-      // Registrare o aggiornare il cliente nell'admin
-      if (formData.email) {
-        // Registrare il cliente se non esiste già
-        await registerCustomer({
-          name: `${formData.nome} ${formData.cognome}`,
-          email: formData.email,
-          phone: formData.telefono,
-          address: {
-            street: formData.via,
-            numeroCivico: formData.numeroCivico,
-            city: formData.citta,
-            province: formData.provincia,
-            cap: formData.cap,
-            country: formData.paese
-          }
-        });
-        
-        // Aggiornare le statistiche dell'ordine
-        await updateCustomerOrderStats(formData.email, orderTotal);
-      }
-      
-      // Clear cart after successful order
-      await saveCart([]);
-      
-      // Redirect to user dashboard after successful order
-      alert('Ordine inviato con successo!');
-      router.push('/user-dashboard');
-    } catch (error) {
-      console.error('Errore durante il salvataggio dell\'ordine:', error);
-      alert('Errore durante il salvataggio dell\'ordine. Riprova.');
+      // Sauvegarder aussi dans l'historique des commandes
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      orders.push(orderData);
+      localStorage.setItem('orders', JSON.stringify(orders));
     }
+    
+    // Clear cart after order
+    await saveCart([]);
+    
+    // Afficher un message de confirmation
+    alert('Ordine inviato! Il tuo client email si aprirà con tutti i dettagli della commande.');
+    
+    // Rediriger vers le dashboard utilisateur
+    setTimeout(() => {
+      router.push('/user-dashboard');
+    }, 1000);
   };
 
   // Calculer les totaux à partir du panier

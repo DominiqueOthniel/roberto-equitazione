@@ -323,14 +323,14 @@ export async function subscribeToAllChatMessages(callback) {
 /**
  * Send a reply message as admin
  */
-export async function sendAdminReply(userEmail, messageText) {
+export async function sendAdminReply(userEmail, messageText, imageUrl = null) {
   try {
-    console.log('📤 [Admin] Envoi réponse admin à:', userEmail);
+    console.log('📤 [Admin] Envoi réponse admin à:', userEmail, imageUrl ? '(avec image)' : '');
     
     const messageToInsert = {
       sender: 'agent',
-      message: messageText,
-      image_url: null,
+      message: messageText || '',
+      image_url: imageUrl || null,
       user_id: null,
       user_email: userEmail, // Utiliser l'email du client pour que le message apparaisse dans sa conversation
       read: false,

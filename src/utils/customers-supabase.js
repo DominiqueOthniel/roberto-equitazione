@@ -37,6 +37,8 @@ async function getUserId() {
  */
 export async function registerCustomer(userData) {
   try {
+    console.log('📝 [Customers] Enregistrement client dans Supabase...');
+    
     // Formater l'adresse si elle existe
     let formattedAddress = null;
     if (userData.address) {
@@ -68,7 +70,7 @@ export async function registerCustomer(userData) {
       is_verified: userData.isVerified || false,
     };
 
-    console.log('Enregistrement client dans Supabase:', customerData);
+    console.log('📝 [Customers] Données client:', { ...customerData, password_hash: customerData.password_hash ? '***' : null });
 
     // Vérifier si le client existe déjà
     const { data: existing, error: checkError } = await supabase
@@ -78,13 +80,19 @@ export async function registerCustomer(userData) {
       .maybeSingle();
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Erreur lors de la vérification du client:', checkError);
+      console.error('❌ [Customers] Erreur lors de la vérification du client:', checkError);
+      console.error('❌ [Customers] Détails:', {
+        message: checkError.message,
+        details: checkError.details,
+        hint: checkError.hint,
+        code: checkError.code
+      });
       throw checkError;
     }
 
     let result;
     if (existing) {
-      console.log('Client existant trouvé, mise à jour...');
+      console.log('🔄 [Customers] Client existant trouvé, mise à jour...');
       // Mettre à jour
       const { data, error } = await supabase
         .from('customers')
@@ -97,14 +105,19 @@ export async function registerCustomer(userData) {
         .single();
 
       if (error) {
-        console.error('Erreur lors de la mise à jour du client:', error);
-        console.error('Détails:', error.message, error.details, error.hint);
+        console.error('❌ [Customers] Erreur lors de la mise à jour du client:', error);
+        console.error('❌ [Customers] Détails:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
       result = data;
-      console.log('Client mis à jour avec succès:', result);
+      console.log('✅ [Customers] Client mis à jour avec succès:', result.id);
     } else {
-      console.log('Nouveau client, création...');
+      console.log('➕ [Customers] Nouveau client, création...');
       // Créer nouveau
       const { data, error } = await supabase
         .from('customers')
@@ -113,34 +126,46 @@ export async function registerCustomer(userData) {
         .single();
 
       if (error) {
-        console.error('Erreur lors de la création du client:', error);
-        console.error('Détails:', error.message, error.details, error.hint);
+        console.error('❌ [Customers] Erreur lors de la création du client:', error);
+        console.error('❌ [Customers] Détails:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
       result = data;
-      console.log('Client créé avec succès:', result);
+      console.log('✅ [Customers] Client créé avec succès:', result.id);
     }
 
     // Cache local
     if (typeof window !== 'undefined') {
-      const customers = await getCustomers();
-      const updated = existing 
-        ? customers.map(c => c.email === customerData.email ? result : c)
-        : [...customers, result];
-      localStorage.setItem('customers', JSON.stringify(updated));
-      
-      window.dispatchEvent(new CustomEvent('customersUpdated', { 
-        detail: { 
-          customer: result,
-          isNew: !existing
-        } 
-      }));
+      try {
+        const customers = await getCustomers();
+        const updated = existing 
+          ? customers.map(c => c.email === customerData.email ? result : c)
+          : [...customers, result];
+        localStorage.setItem('customers', JSON.stringify(updated));
+        
+        window.dispatchEvent(new CustomEvent('customersUpdated', { 
+          detail: { 
+            customer: result,
+            isNew: !existing
+          } 
+        }));
+        console.log('💾 [Customers] Cache local mis à jour');
+      } catch (cacheError) {
+        console.warn('⚠️ [Customers] Erreur lors de la mise à jour du cache:', cacheError);
+      }
     }
 
     return result;
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement du client:', error);
+    console.error('❌ [Customers] Erreur lors de l\'enregistrement du client:', error);
+    console.error('❌ [Customers] Stack:', error.stack);
     // Fallback localStorage
+    console.log('📦 [Customers] Utilisation du fallback localStorage');
     return registerCustomerLocalStorage(userData);
   }
 }
@@ -150,12 +175,32 @@ export async function registerCustomer(userData) {
  */
 export async function getCustomers() {
   try {
+    console.log('📥 [Customers] Chargement des clients depuis Supabase...');
+    
     const { data, error } = await supabase
       .from('customers')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [Customers] Erreur Supabase:', error);
+      console.error('❌ [Customers] Détails:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      
+      // Si c'est une erreur de permissions RLS, essayer de charger depuis localStorage
+      if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('RLS')) {
+        console.warn('⚠️ [Customers] Erreur de permissions RLS, utilisation du cache local');
+        return getCustomersLocalStorage();
+      }
+      
+      throw error;
+    }
+
+    console.log(`✅ [Customers] ${data?.length || 0} clients chargés depuis Supabase`);
 
     // Mapper les données de Supabase (snake_case) vers le format frontend (camelCase)
     const mappedCustomers = (data || []).map(customer => ({
@@ -175,13 +220,17 @@ export async function getCustomers() {
     // Cache local
     if (typeof window !== 'undefined') {
       localStorage.setItem('customers', JSON.stringify(mappedCustomers));
+      console.log('💾 [Customers] Cache local mis à jour');
     }
 
     return mappedCustomers;
   } catch (error) {
-    console.error('Erreur lors de la récupération des clients:', error);
+    console.error('❌ [Customers] Erreur lors de la récupération des clients:', error);
+    console.error('❌ [Customers] Stack:', error.stack);
     // Fallback localStorage
-    return getCustomersLocalStorage();
+    const localCustomers = getCustomersLocalStorage();
+    console.log(`📦 [Customers] ${localCustomers.length} clients chargés depuis localStorage (fallback)`);
+    return localCustomers;
   }
 }
 

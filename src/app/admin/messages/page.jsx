@@ -379,7 +379,15 @@ export default function AdminMessagesPage() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [replyText, setReplyText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
   const userSelectedRef = useRef(false); // Pour savoir si l'utilisateur a explicitement sélectionné une conversation
+  const isInitialLoadRef = useRef(true); // Pour savoir si c'est le premier chargement
+  const selectedConversationIdRef = useRef(null); // Ref pour stocker l'ID de la conversation sélectionnée
+  
+  // Clé pour sessionStorage
+  const SELECTED_CONVERSATION_KEY = 'admin_selected_conversation_id';
 
   useEffect(() => {
     loadConversations();
@@ -389,13 +397,24 @@ export default function AdminMessagesPage() {
     subscribeToAllChatMessages((newMessage) => {
       console.log('⚡️ [Admin] Nouveau message reçu:', newMessage);
       // Recharger les conversations quand un nouveau message arrive
-      loadConversations();
+      // Mais préserver la sélection de l'utilisateur
+      // Utiliser setTimeout pour éviter les conflits avec d'autres mises à jour
+      setTimeout(() => {
+        loadConversations();
+      }, 100);
     }).then((channel) => {
       subscription = channel;
     });
     
-    // Vérifier périodiquement les nouveaux messages (fallback)
-    const interval = setInterval(loadConversations, 5000);
+    // Vérifier périodiquement les nouveaux messages (backup)
+    // Intervalle augmenté à 15 secondes et désactivé si une conversation est ouverte
+    const interval = setInterval(() => {
+      // Ne recharger que si aucune conversation n'est ouverte
+      // pour éviter de perturber l'utilisateur qui lit une conversation
+      if (!selectedConversationIdRef.current) {
+        loadConversations();
+      }
+    }, 15000);
     
     return () => {
       if (subscription) {
@@ -409,35 +428,119 @@ export default function AdminMessagesPage() {
     const loaded = await loadConversationsFromSupabase();
     
     if (loaded.length > 0) {
-      // Sauvegarder l'ID de la conversation actuellement sélectionnée AVANT de mettre à jour
-      const currentSelectedId = selectedConversation?.id;
+      // Mettre à jour la liste des conversations seulement si elle a changé
+      // Comparer les IDs pour éviter les re-renders inutiles
+      setConversations(prev => {
+        const prevIds = prev.map(c => c.id).sort().join(',');
+        const newIds = loaded.map(c => c.id).sort().join(',');
+        if (prevIds === newIds && prev.length === loaded.length) {
+          // Les conversations sont les mêmes, ne pas mettre à jour
+          return prev;
+        }
+        return loaded;
+      });
       
-      setConversations(loaded);
+      // Récupérer l'ID sauvegardé dans sessionStorage
+      let savedConversationId = null;
+      if (typeof window !== 'undefined') {
+        savedConversationId = sessionStorage.getItem(SELECTED_CONVERSATION_KEY);
+      }
       
-      // Si aucune conversation n'est sélectionnée et qu'il y a des conversations, sélectionner la première
-      if (!currentSelectedId && loaded.length > 0) {
-        setSelectedConversation(loaded[0]);
-        userSelectedRef.current = false; // Auto-sélection, pas par l'utilisateur
-      } else if (currentSelectedId) {
-        // Si une conversation est sélectionnée, essayer de la retrouver par son ID
+      // Sauvegarder l'ID de la conversation actuellement sélectionnée
+      // Utiliser la ref pour avoir la valeur la plus récente
+      const currentSelectedId = selectedConversationIdRef.current || selectedConversation?.id || savedConversationId;
+      
+      // Au premier chargement, essayer de restaurer la sélection depuis sessionStorage
+      // MAIS seulement si l'utilisateur avait explicitement sélectionné une conversation
+      if (isInitialLoadRef.current && savedConversationId) {
+        const savedConversation = loaded.find(c => c.id === savedConversationId);
+        if (savedConversation) {
+          // Vérifier si l'utilisateur avait explicitement sélectionné cette conversation
+          // On ne restaure que si c'était une sélection utilisateur (pas auto)
+          const wasUserSelected = sessionStorage.getItem(SELECTED_CONVERSATION_KEY + '_user_selected') === 'true';
+          if (wasUserSelected) {
+            setSelectedConversation(savedConversation);
+            selectedConversationIdRef.current = savedConversation.id;
+            userSelectedRef.current = true;
+          } else {
+            // Si ce n'était pas une sélection utilisateur, ne pas restaurer
+            setSelectedConversation(null);
+            selectedConversationIdRef.current = null;
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem(SELECTED_CONVERSATION_KEY);
+            }
+          }
+          isInitialLoadRef.current = false;
+          return; // Ne pas continuer
+        } else {
+          // La conversation sauvegardée n'existe plus, nettoyer
+          setSelectedConversation(null);
+          selectedConversationIdRef.current = null;
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem(SELECTED_CONVERSATION_KEY);
+            sessionStorage.removeItem(SELECTED_CONVERSATION_KEY + '_user_selected');
+          }
+        }
+      }
+      
+      isInitialLoadRef.current = false;
+      
+      // NE PLUS sélectionner automatiquement la première conversation
+      // Les conversations doivent être ouvertes manuellement par l'utilisateur
+      // Seulement mettre à jour la conversation si elle est déjà sélectionnée
+      if (currentSelectedId && userSelectedRef.current) {
+        // Si l'utilisateur a explicitement sélectionné une conversation, la mettre à jour
         const updated = loaded.find(c => c.id === currentSelectedId);
         if (updated) {
-          // Toujours mettre à jour la conversation sélectionnée avec les nouvelles données
-          // pour avoir les messages à jour, mais on garde la même conversation
-          setSelectedConversation(updated);
-        } else if (loaded.length > 0 && !userSelectedRef.current) {
-          // Si la conversation sélectionnée n'existe plus ET que l'utilisateur n'a pas explicitement sélectionné,
-          // sélectionner la première disponible
-          setSelectedConversation(loaded[0]);
+          // Comparer les messages pour voir s'il y a des changements
+          const currentMessages = selectedConversation?.messages || [];
+          const newMessages = updated.messages || [];
+          
+          // Mettre à jour seulement si les messages ont changé (nouveau message reçu)
+          // Comparer le nombre de messages et l'ID du dernier message pour une comparaison rapide
+          const currentLastMessageId = currentMessages.length > 0 ? currentMessages[currentMessages.length - 1]?.id : null;
+          const newLastMessageId = newMessages.length > 0 ? newMessages[newMessages.length - 1]?.id : null;
+          
+          if (newMessages.length !== currentMessages.length || currentLastMessageId !== newLastMessageId) {
+            // Il y a des nouveaux messages, mettre à jour
+            setSelectedConversation(updated);
+            selectedConversationIdRef.current = updated.id;
+            // S'assurer que c'est sauvegardé
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem(SELECTED_CONVERSATION_KEY, updated.id);
+            }
+          }
+          // Sinon, ne rien faire pour éviter les re-renders inutiles
+        } else {
+          // Si la conversation sélectionnée n'existe plus, fermer la sélection
+          setSelectedConversation(null);
+          selectedConversationIdRef.current = null;
+          userSelectedRef.current = false;
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem(SELECTED_CONVERSATION_KEY);
+            sessionStorage.removeItem(SELECTED_CONVERSATION_KEY + '_user_selected');
+          }
         }
-        // Si userSelectedRef.current est true et que la conversation n'existe plus,
-        // on ne fait rien pour préserver la sélection de l'utilisateur
+      } else if (currentSelectedId && !userSelectedRef.current) {
+        // Si une conversation est sélectionnée mais pas par l'utilisateur (auto-sélection),
+        // la fermer pour forcer l'utilisateur à choisir manuellement
+        setSelectedConversation(null);
+        selectedConversationIdRef.current = null;
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem(SELECTED_CONVERSATION_KEY);
+          sessionStorage.removeItem(SELECTED_CONVERSATION_KEY + '_user_selected');
+        }
       }
+      // Si aucune conversation n'est sélectionnée - NE RIEN FAIRE
+      // Les conversations doivent être ouvertes manuellement par l'utilisateur
     } else {
       // Aucune conversation trouvée
       setConversations([]);
       setSelectedConversation(null);
       userSelectedRef.current = false;
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(SELECTED_CONVERSATION_KEY);
+      }
     }
   };
 
@@ -492,22 +595,123 @@ export default function AdminMessagesPage() {
     });
   };
 
+  const handleDeleteConversation = async (conversation) => {
+    if (!conversation) return;
+
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const userEmail = conversation.customer.email;
+
+      // Supprimer tous les messages de cette conversation
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('user_email', userEmail.toLowerCase());
+
+      if (error) {
+        console.error('Erreur lors de la suppression de la conversation:', error);
+        alert('Erreur lors de la suppression de la conversation. Veuillez réessayer.');
+        return;
+      }
+
+      console.log('✅ [Admin] Conversation supprimée:', userEmail);
+
+      // Fermer la conversation sélectionnée
+      setSelectedConversation(null);
+      selectedConversationIdRef.current = null;
+      userSelectedRef.current = false;
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(SELECTED_CONVERSATION_KEY);
+        sessionStorage.removeItem(SELECTED_CONVERSATION_KEY + '_user_selected');
+      }
+
+      // Recharger les conversations pour mettre à jour la liste
+      await loadConversations();
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la conversation:', error);
+      alert('Erreur lors de la suppression de la conversation. Veuillez réessayer.');
+    }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e?.target?.files?.[0];
+    if (file) {
+      // Vérifier la taille (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('L\'immagine è troppo grande. Dimensione massima: 5MB');
+        return;
+      }
+      
+      // Vérifier le type
+      if (!file.type.startsWith('image/')) {
+        alert('Seleziona un file immagine valido');
+        return;
+      }
+      
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader?.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef?.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedConversation) return;
+    if ((!replyText.trim() && !selectedImage) || !selectedConversation) return;
 
     setIsTyping(true);
     
     try {
+      let imageUrl = null;
+      
+      // Si une image est sélectionnée, l'uploader dans Supabase Storage
+      if (selectedImage) {
+        try {
+          const { uploadFile } = await import('@/lib/supabase-storage');
+          
+          // Générer un nom de fichier unique
+          const timestamp = Date.now();
+          const fileExtension = selectedImage.name.split('.').pop() || 'jpg';
+          const fileName = `chat/${timestamp}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+          
+          // Uploader l'image dans le bucket 'products' (ou créer un bucket 'chat' si nécessaire)
+          const result = await uploadFile('products', fileName, selectedImage);
+          imageUrl = result.url;
+          
+          console.log('✅ [Admin] Image uploadée:', imageUrl);
+        } catch (uploadError) {
+          console.error('❌ [Admin] Erreur lors de l\'upload de l\'image:', uploadError);
+          alert('Erreur lors de l\'upload de l\'image. Veuillez réessayer.');
+          setIsTyping(false);
+          return;
+        }
+      }
+      
       // Envoyer le message via Supabase
       const userEmail = selectedConversation.customer.email;
-      const savedMessage = await sendAdminReply(userEmail, replyText);
+      const savedMessage = await sendAdminReply(userEmail, replyText, imageUrl);
       
       console.log('✅ [Admin] Réponse envoyée:', savedMessage);
       
       // Recharger les conversations pour avoir les données à jour
       await loadConversations();
       
+      // Réinitialiser le formulaire
       setReplyText('');
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (fileInputRef?.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (error) {
       console.error('❌ [Admin] Erreur lors de l\'envoi de la réponse:', error);
       alert('Errore durante l\'invio della risposta. Riprova.');
@@ -637,7 +841,13 @@ export default function AdminMessagesPage() {
                     key={conversation.id}
                     onClick={() => {
                       userSelectedRef.current = true; // Marquer que l'utilisateur a explicitement sélectionné
+                      selectedConversationIdRef.current = conversation.id; // Mettre à jour la ref immédiatement
                       setSelectedConversation(conversation);
+                      // Sauvegarder dans sessionStorage pour persister la sélection
+                      if (typeof window !== 'undefined') {
+                        sessionStorage.setItem(SELECTED_CONVERSATION_KEY, conversation.id);
+                        sessionStorage.setItem(SELECTED_CONVERSATION_KEY + '_user_selected', 'true');
+                      }
                     }}
                     className={`w-full p-4 border-b border-border hover:bg-muted transition-fast text-left ${
                       selectedConversation?.id === conversation.id ? 'bg-muted' : ''
@@ -717,6 +927,37 @@ export default function AdminMessagesPage() {
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-body font-semibold ${getPriorityColor(selectedConversation.priority)}`}>
                         {selectedConversation.priority === 'high' ? 'Alta' : selectedConversation.priority === 'normal' ? 'Normale' : 'Bassa'}
                       </span>
+                      {/* Bouton pour fermer la conversation */}
+                      <button
+                        onClick={() => {
+                          setSelectedConversation(null);
+                          selectedConversationIdRef.current = null;
+                          userSelectedRef.current = false;
+                          if (typeof window !== 'undefined') {
+                            sessionStorage.removeItem(SELECTED_CONVERSATION_KEY);
+                            sessionStorage.removeItem(SELECTED_CONVERSATION_KEY + '_user_selected');
+                          }
+                        }}
+                        className="p-2 rounded-md hover:bg-muted transition-fast text-text-secondary hover:text-text-primary"
+                        aria-label="Fermer la conversation"
+                        title="Fermer"
+                      >
+                        <Icon name="XMarkIcon" size={20} variant="outline" />
+                      </button>
+                      {/* Bouton pour supprimer la conversation */}
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Sei sicuro di voler eliminare questa conversazione? Questa azione è irreversibile.')) {
+                            return;
+                          }
+                          await handleDeleteConversation(selectedConversation);
+                        }}
+                        className="p-2 rounded-md hover:bg-error/10 transition-fast text-error hover:text-error"
+                        aria-label="Supprimer la conversation"
+                        title="Supprimer"
+                      >
+                        <Icon name="TrashIcon" size={20} variant="outline" />
+                      </button>
                     </div>
                   </div>
                   <div>
@@ -800,6 +1041,24 @@ export default function AdminMessagesPage() {
 
                 {/* Reply Input */}
                 <div className="border-t border-border p-4 sm:p-6">
+                  {/* Aperçu de l'image sélectionnée */}
+                  {imagePreview && (
+                    <div className="mb-3 relative inline-block">
+                      <img
+                        src={imagePreview}
+                        alt="Aperçu"
+                        className="max-w-[200px] max-h-[200px] rounded-md object-cover"
+                      />
+                      <button
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 bg-error text-error-foreground rounded-full p-1 hover:opacity-90 transition-fast"
+                        aria-label="Supprimer l'image"
+                      >
+                        <Icon name="XMarkIcon" size={16} variant="outline" />
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="flex gap-3">
                     <textarea
                       value={replyText}
@@ -816,26 +1075,39 @@ export default function AdminMessagesPage() {
                     />
                     <button
                       onClick={handleSendReply}
-                      disabled={!replyText.trim()}
+                      disabled={(!replyText.trim() && !selectedImage) || isTyping}
                       className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 rounded-md font-body font-semibold hover:opacity-90 transition-fast disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm sm:text-base"
                     >
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
+                      {isTyping ? (
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      )}
                       Invia
                     </button>
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-4">
-                      <button className="p-2 hover:bg-muted rounded-md transition-fast">
-                        <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                      </button>
-                      <button className="p-2 hover:bg-muted rounded-md transition-fast">
-                        <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                      {/* Bouton pour sélectionner une image */}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2 hover:bg-muted rounded-md transition-fast"
+                        aria-label="Ajouter une image"
+                        title="Ajouter une image"
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          className="hidden"
+                        />
+                        <Icon name="CameraIcon" size={20} variant="outline" className="text-text-secondary" />
                       </button>
                     </div>
                     <button

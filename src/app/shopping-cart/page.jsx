@@ -245,20 +245,18 @@ export default function ShoppingCartPage() {
             Hai Bisogno di Assistenza?
           </h2>
           <p className="text-sm sm:text-base text-text-secondary mb-4 sm:mb-6 max-w-3xl">
-            Il nostro team di esperti è disponibile per aiutarti con domande su taglie, specifiche o consigli personalizzati. Usa la chat per inviare foto o fare domande.
+            Il nostro team di esperti è disponibile per aiutarti con domande su taglie, specifiche o consigli personalizzati. Contattaci via email per qualsiasi domanda.
           </p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-            <button 
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('openChat'));
-              }}
+            <a 
+              href="mailto:robertotavernar7@gmail.com?subject=Richiesta di assistenza"
               className="bg-primary text-primary-foreground px-4 sm:px-6 py-2.5 sm:py-3 rounded-md font-body font-semibold hover:opacity-90 transition-fast flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              Apri Chat
-            </button>
+              Contattaci via Email
+            </a>
           </div>
         </div>
       </div>
