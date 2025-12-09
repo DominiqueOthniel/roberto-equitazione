@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import Image from 'next/image';
 import { getAllChatMessages, subscribeToAllChatMessages, sendAdminReply, deleteChatMessages } from '@/utils/chat-supabase';
+import { createNotification } from '@/utils/notifications';
 
 // Fonction pour charger les conversations depuis Supabase
 const loadConversationsFromSupabase = async () => {
@@ -391,8 +392,8 @@ export default function AdminMessagesPage() {
       
       // Créer une notification immédiatement si c'est un message client
       if (newMessage.sender === 'user' || newMessage.sender === 'customer') {
-        const { createNotification } = require('@/utils/notifications');
-        createNotification(
+        console.log('🔔 [Admin] Création notification pour nouveau message:', newMessage);
+        const notification = createNotification(
           'message',
           'Nouveau message',
           newMessage.text || 'Image partagée',
@@ -401,16 +402,28 @@ export default function AdminMessagesPage() {
             userEmail: newMessage.user_email || 'client'
           }
         );
+        console.log('✅ [Admin] Notification créée:', notification);
+        
+        // Déclencher aussi un événement storage pour forcer la mise à jour
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'adminNotifications',
+            newValue: localStorage.getItem('adminNotifications')
+          }));
+        }
       }
       
       // Recharger les conversations quand un nouveau message arrive
+      // Utiliser setSelectedConversation pour préserver la sélection
       loadConversations();
     }).then((channel) => {
       subscription = channel;
     });
     
     // Vérifier périodiquement les nouveaux messages (fallback)
-    const interval = setInterval(loadConversations, 5000);
+    const interval = setInterval(() => {
+      loadConversations();
+    }, 5000);
     
     return () => {
       if (subscription) {
@@ -426,19 +439,23 @@ export default function AdminMessagesPage() {
     if (loaded.length > 0) {
       setConversations(loaded);
       
-      // Si une conversation est sélectionnée, la mettre à jour
-      if (selectedConversation) {
-        const updated = loaded.find(c => c.id === selectedConversation.id);
-        if (updated) {
-          // Mettre à jour la conversation sélectionnée sans changer de conversation
-          setSelectedConversation(updated);
+      // Utiliser une fonction de callback pour préserver la sélection actuelle
+      setSelectedConversation(prevSelected => {
+        // Si une conversation est sélectionnée, la mettre à jour
+        if (prevSelected) {
+          const updated = loaded.find(c => c.id === prevSelected.id);
+          if (updated) {
+            // Mettre à jour la conversation sélectionnée sans changer de conversation
+            return updated;
+          }
+          // Si la conversation n'existe plus, garder la sélection actuelle
+          // L'admin peut choisir manuellement une autre conversation
+          return prevSelected;
+        } else {
+          // Seulement si aucune conversation n'est sélectionnée, sélectionner la première
+          return loaded[0];
         }
-        // NE PAS changer de conversation si celle sélectionnée n'existe plus
-        // L'admin peut choisir manuellement une autre conversation
-      } else if (loaded.length > 0) {
-        // Seulement si aucune conversation n'est sélectionnée, sélectionner la première
-        setSelectedConversation(loaded[0]);
-      }
+      });
     } else {
       // Aucune conversation trouvée
       setConversations([]);
@@ -640,7 +657,10 @@ export default function AdminMessagesPage() {
                   filteredConversations.map((conversation) => (
                   <button
                     key={conversation.id}
-                    onClick={() => setSelectedConversation(conversation)}
+                    onClick={() => {
+                      // Forcer la sélection de cette conversation
+                      setSelectedConversation(conversation);
+                    }}
                     className={`w-full p-4 border-b border-border hover:bg-muted transition-fast text-left ${
                       selectedConversation?.id === conversation.id ? 'bg-muted' : ''
                     }`}

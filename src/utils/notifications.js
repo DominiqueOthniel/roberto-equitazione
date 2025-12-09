@@ -30,14 +30,20 @@ export function createNotification(type, title, message, metadata = {}) {
     localStorage.setItem('adminNotifications', JSON.stringify(limited));
     
     // Déclencher un événement pour mettre à jour les composants
-    window.dispatchEvent(new CustomEvent('newNotification', { detail: newNotification }));
-    
-    // Déclencher aussi un événement spécifique selon le type
-    if (type === 'order') {
-      window.dispatchEvent(new CustomEvent('newOrder'));
-    } else if (type === 'message') {
-      window.dispatchEvent(new CustomEvent('newMessage'));
-    }
+    // Utiliser setTimeout(0) pour s'assurer que l'événement est déclenché après la mise à jour du localStorage
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('newNotification', { detail: newNotification }));
+      
+      // Déclencher aussi un événement spécifique selon le type
+      if (type === 'order') {
+        window.dispatchEvent(new CustomEvent('newOrder'));
+      } else if (type === 'message') {
+        window.dispatchEvent(new CustomEvent('newMessage'));
+      }
+      
+      // Déclencher aussi notificationUpdated pour forcer la mise à jour
+      window.dispatchEvent(new CustomEvent('notificationUpdated'));
+    }, 0);
     
     return newNotification;
   } catch (error) {
