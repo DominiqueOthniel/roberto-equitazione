@@ -26,6 +26,9 @@ export default function NotificationBell() {
   useEffect(() => {
     loadNotifications();
     
+    // Détecter si on est sur mobile
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
     // Écouter les nouvelles notifications
     const handleStorageChange = (e) => {
       // L'événement storage ne se déclenche que dans d'autres onglets
@@ -37,22 +40,54 @@ export default function NotificationBell() {
     
     const handleNewOrder = () => {
       // Recharger immédiatement quand un nouvel ordre est créé
-      setTimeout(() => loadNotifications(), 100);
+      // Sur mobile, utiliser requestAnimationFrame pour une meilleure performance
+      if (isMobile) {
+        requestAnimationFrame(() => {
+          setTimeout(() => loadNotifications(), 50);
+        });
+      } else {
+        setTimeout(() => loadNotifications(), 100);
+      }
     };
     
     const handleNewMessage = () => {
       // Recharger immédiatement quand un nouveau message arrive
-      setTimeout(() => loadNotifications(), 100);
+      if (isMobile) {
+        requestAnimationFrame(() => {
+          setTimeout(() => loadNotifications(), 50);
+        });
+      } else {
+        setTimeout(() => loadNotifications(), 100);
+      }
     };
     
     const handleNewNotification = (e) => {
       // Recharger immédiatement quand une nouvelle notification est créée
       // L'événement peut contenir les détails de la notification dans e.detail
-      setTimeout(() => loadNotifications(), 100);
+      if (isMobile) {
+        requestAnimationFrame(() => {
+          setTimeout(() => loadNotifications(), 50);
+        });
+      } else {
+        setTimeout(() => loadNotifications(), 100);
+      }
     };
     
     const handleNotificationUpdated = () => {
       // Recharger quand une notification est mise à jour
+      loadNotifications();
+    };
+    
+    // Détecter quand la page redevient visible (important sur mobile)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Recharger les notifications quand l'utilisateur revient sur l'onglet
+        loadNotifications();
+      }
+    };
+    
+    // Détecter quand la fenêtre reprend le focus (mobile)
+    const handleFocus = () => {
       loadNotifications();
     };
     
@@ -65,9 +100,13 @@ export default function NotificationBell() {
     window.addEventListener('newNotification', handleNewNotification);
     window.addEventListener('notificationUpdated', handleNotificationUpdated);
     
+    // Écouter les changements de visibilité (important sur mobile)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
     // Vérifier périodiquement les nouvelles notifications (backup)
-    // Intervalle réduit à 2 secondes pour une meilleure réactivité
-    const interval = setInterval(loadNotifications, 2000);
+    // Sur mobile, vérifier plus souvent car les événements peuvent être moins fiables
+    const interval = setInterval(loadNotifications, isMobile ? 1000 : 2000);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -75,6 +114,8 @@ export default function NotificationBell() {
       window.removeEventListener('newMessage', handleNewMessage);
       window.removeEventListener('newNotification', handleNewNotification);
       window.removeEventListener('notificationUpdated', handleNotificationUpdated);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
       clearInterval(interval);
     };
   }, []);

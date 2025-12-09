@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import Image from 'next/image';
@@ -379,6 +379,7 @@ export default function AdminMessagesPage() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [replyText, setReplyText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const userSelectedRef = useRef(false); // Pour savoir si l'utilisateur a explicitement sélectionné une conversation
 
   useEffect(() => {
     loadConversations();
@@ -408,26 +409,35 @@ export default function AdminMessagesPage() {
     const loaded = await loadConversationsFromSupabase();
     
     if (loaded.length > 0) {
+      // Sauvegarder l'ID de la conversation actuellement sélectionnée AVANT de mettre à jour
+      const currentSelectedId = selectedConversation?.id;
+      
       setConversations(loaded);
       
       // Si aucune conversation n'est sélectionnée et qu'il y a des conversations, sélectionner la première
-      if (!selectedConversation && loaded.length > 0) {
+      if (!currentSelectedId && loaded.length > 0) {
         setSelectedConversation(loaded[0]);
-      }
-      
-      // Si une conversation est sélectionnée, la mettre à jour
-      if (selectedConversation) {
-        const updated = loaded.find(c => c.id === selectedConversation.id);
+        userSelectedRef.current = false; // Auto-sélection, pas par l'utilisateur
+      } else if (currentSelectedId) {
+        // Si une conversation est sélectionnée, essayer de la retrouver par son ID
+        const updated = loaded.find(c => c.id === currentSelectedId);
         if (updated) {
+          // Toujours mettre à jour la conversation sélectionnée avec les nouvelles données
+          // pour avoir les messages à jour, mais on garde la même conversation
           setSelectedConversation(updated);
-        } else if (loaded.length > 0) {
-          // Si la conversation sélectionnée n'existe plus, sélectionner la première disponible
+        } else if (loaded.length > 0 && !userSelectedRef.current) {
+          // Si la conversation sélectionnée n'existe plus ET que l'utilisateur n'a pas explicitement sélectionné,
+          // sélectionner la première disponible
           setSelectedConversation(loaded[0]);
         }
+        // Si userSelectedRef.current est true et que la conversation n'existe plus,
+        // on ne fait rien pour préserver la sélection de l'utilisateur
       }
     } else {
       // Aucune conversation trouvée
       setConversations([]);
+      setSelectedConversation(null);
+      userSelectedRef.current = false;
     }
   };
 
@@ -625,7 +635,10 @@ export default function AdminMessagesPage() {
                   filteredConversations.map((conversation) => (
                   <button
                     key={conversation.id}
-                    onClick={() => setSelectedConversation(conversation)}
+                    onClick={() => {
+                      userSelectedRef.current = true; // Marquer que l'utilisateur a explicitement sélectionné
+                      setSelectedConversation(conversation);
+                    }}
                     className={`w-full p-4 border-b border-border hover:bg-muted transition-fast text-left ${
                       selectedConversation?.id === conversation.id ? 'bg-muted' : ''
                     }`}
