@@ -141,9 +141,7 @@ export default function Footer() {
   const footerLinks = {
     navigazione: [
       { label: 'Catalogo Selle', href: '/product-catalog' },
-      { label: 'Il Mio Account', href: '/user-dashboard' },
       { label: 'Carrello', href: '/shopping-cart' },
-      { label: 'Storia Ordini', href: '/order-history' },
     ],
     informazioni: [
       { label: 'Chi Siamo', href: '#' },

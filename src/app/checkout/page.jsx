@@ -222,9 +222,9 @@ Sistema di ordinazione automatica`);
     // Afficher un message de confirmation
     alert('Ordine inviato! Il tuo client email si aprirà con tutti i dettagli della commande.');
     
-    // Rediriger vers le dashboard utilisateur
+    // Rediriger vers le catalogue
     setTimeout(() => {
-      router.push('/user-dashboard');
+      router.push('/product-catalog');
     }, 1000);
   };
 

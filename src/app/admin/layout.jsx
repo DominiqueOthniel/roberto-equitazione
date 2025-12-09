@@ -106,11 +106,6 @@ export default function AdminLayout({ children }) {
       icon: 'ClipboardDocumentListIcon',
     },
     {
-      label: 'Clienti',
-      href: '/admin/customers',
-      icon: 'UsersIcon',
-    },
-    {
       label: 'Recensioni',
       href: '/admin/reviews',
       icon: 'StarIcon',

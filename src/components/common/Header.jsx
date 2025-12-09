@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
 import CartIndicator from '@/components/common/CartIndicator';
-import UserAccountMenu from '@/components/common/UserAccountMenu';
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -15,11 +14,6 @@ export default function Header() {
       label: 'Catalogo',
       href: '/product-catalog',
       icon: 'ViewGridIcon',
-    },
-    {
-      label: 'Il Mio Account',
-      href: '/user-dashboard',
-      icon: 'UserIcon',
     },
   ];
 
@@ -61,7 +55,6 @@ export default function Header() {
 
           <div className="flex items-center gap-4">
             <CartIndicator />
-            <UserAccountMenu />
 
             <button
               onClick={toggleMobileMenu}
