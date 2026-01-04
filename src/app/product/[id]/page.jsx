@@ -217,7 +217,7 @@ export default function ProductDetailPage() {
       <div className="max-w-container mx-auto px-4 lg:px-6 py-8">
         {/* Breadcrumb */}
         <div className="mb-6 text-sm text-text-secondary">
-          <Link href="/product-catalog" className="hover:text-primary">Catalogo</Link>
+          <Link href="/product-catalog" className="hover:text-primary">Disponibile</Link>
           <span className="mx-2">/</span>
           <span>{product.name}</span>
         </div>

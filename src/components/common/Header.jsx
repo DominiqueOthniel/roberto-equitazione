@@ -10,7 +10,7 @@ export default function Header() {
 
   const navigationItems = [
     {
-      label: 'Catalogo',
+      label: 'Disponibile',
       href: '/product-catalog',
       icon: 'Squares2X2Icon',
     },
