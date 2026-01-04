@@ -4,20 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
 import CartIndicator from '@/components/common/CartIndicator';
+import UserAccountMenu from '@/components/common/UserAccountMenu';
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigationItems = [
     {
-      label: 'Disponibile',
+      label: 'Catalogo',
       href: '/product-catalog',
-      icon: 'Squares2X2Icon',
+      icon: 'ViewGridIcon',
     },
     {
-      label: 'Témoignages',
-      href: '/temoignages',
-      icon: 'StarIcon',
+      label: 'Il Mio Account',
+      href: '/user-dashboard',
+      icon: 'UserIcon',
     },
   ];
 
@@ -76,6 +77,7 @@ export default function Header() {
 
           <div className="flex items-center gap-4">
             <CartIndicator />
+            <UserAccountMenu />
 
             <button
               onClick={toggleMobileMenu}

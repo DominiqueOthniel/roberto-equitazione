@@ -145,7 +145,7 @@ export default function ProductCatalogPage() {
         {/* Header Section */}
         <div className="mb-8 sm:mb-10">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-text-primary mb-3 tracking-tight">
-            Selle Disponibili
+            Catalogo Selle
           </h1>
           <p className="text-base sm:text-lg text-text-secondary leading-relaxed max-w-2xl">
             Scopri la nostra selezione di selle per equitazione delle migliori marche, accuratamente selezionate per offrirti qualità, comfort e prestazioni eccezionali.

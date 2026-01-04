@@ -3,7 +3,7 @@ services:
     name: roberto-equitazione
     env: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --production=false && npm run build && ls -la .next/static/chunks/ | head -20
     startCommand: npm start
     envVars:
       - key: NODE_ENV

@@ -38,7 +38,7 @@ const nextConfig = {
     // Optimisations de performance pour réduire la latence
     compress: true,
     poweredByHeader: false,
-    // Redirection temporairement désactivée pour déboguer
+    // Redirection désactivée pour afficher la page d'accueil
     // async redirects() {
     //   return [
     //     {

@@ -1,0 +1,31 @@
+warning: in the working copy of 'next.config.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'render.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/admin/layout.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/admin/login/page.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/admin/orders/page.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/admin/page.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/layout.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/product-catalog/page.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/product/[id]/page.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/common/Footer.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/common/Header.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/common/SimpleHeader.jsx', LF will be replaced by CRLF the next time Git touches it
+ next.config.mjs                        |   2 [32m+[m[31m-[m
+ render.yaml                            |   2 [32m+[m[31m-[m
+ src/app/admin/forgot-password/page.jsx |  67 [31m----[m
+ src/app/admin/layout.jsx               | 218 [32m++++++++++++[m
+ src/app/admin/login/page.jsx           | 195 [32m++++++++[m[31m---[m
+ src/app/admin/orders/page.jsx          | 605 [32m+++++++++++++++++++++++++++++[m[31m----[m
+ src/app/admin/page.jsx                 | 190 [32m++++++[m[31m-----[m
+ src/app/admin/products/page.jsx        | 392 [32m++++++++++++++++++[m[31m---[m
+ src/app/admin/reviews/page.jsx         | 311 [32m++++++++++++++++[m[31m-[m
+ src/app/admin/storage/page.jsx         | 283 [32m++++++++++++++[m[31m-[m
+ src/app/layout.jsx                     |  28 [32m++[m
+ src/app/page.js                        | 135 [31m--------[m
+ src/app/product-catalog/page.jsx       |   2 [32m+[m[31m-[m
+ src/app/product/[id]/page.jsx          |   2 [32m+[m[31m-[m
+ src/app/temoignages/page.js            | 161 [31m---------[m
+ src/components/common/Footer.jsx       | 387 [32m+++++++++++++++++++++[m
+ src/components/common/Header.jsx       |  12 [32m+[m[31m-[m
+ src/components/common/SimpleHeader.jsx | 116 [32m+++++++[m
+ 18 files changed, 2491 insertions(+), 617 deletions(-)
