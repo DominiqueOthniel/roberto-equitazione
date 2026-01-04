@@ -1,3 +1,5 @@
+'use client';
+
 export default function TestimonialsPage() {
   const testimonials = [
     {
@@ -76,131 +78,57 @@ export default function TestimonialsPage() {
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} style={{
-        color: i < rating ? '#FFD700' : '#E5E7EB',
-        fontSize: '1.2rem'
-      }}>
+      <span key={i} className={`text-xl ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}>
         ★
       </span>
     ));
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f8f6f3',
-      padding: '2rem 1rem'
-    }}>
+    <div className="min-h-screen bg-surface py-8 px-4">
       {/* Header */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        textAlign: 'center',
-        marginBottom: '3rem'
-      }}>
-        <h1 style={{
-          fontSize: 'clamp(2.5rem, 6vw, 4rem)',
-          fontWeight: 'bold',
-          color: '#2C1810',
-          marginBottom: '1rem',
-          fontFamily: 'serif'
-        }}>
+      <div className="max-w-6xl mx-auto text-center mb-12">
+        <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
           Témoignages Clients
         </h1>
-        <div style={{
-          width: '6rem',
-          height: '0.25rem',
-          backgroundColor: '#8B4513',
-          margin: '0 auto 1.5rem'
-        }} />
-        <p style={{
-          fontSize: '1.25rem',
-          color: '#6B5B4F',
-          maxWidth: '800px',
-          margin: '0 auto'
-        }}>
+        <div className="w-24 h-1 bg-primary mx-auto mb-6" />
+        <p className="text-xl text-text-secondary max-w-3xl mx-auto">
           Découvrez ce que nos clients disent de leur expérience avec Roberto Equitazione
         </p>
       </div>
 
       {/* Testimonials Grid */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-        gap: '2rem',
-        padding: '0 1rem'
-      }}>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
         {testimonials.map((testimonial) => (
-          <div key={testimonial.id} style={{
-            backgroundColor: 'white',
-            borderRadius: '1rem',
-            padding: '2rem',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-            border: '1px solid rgba(139, 69, 19, 0.1)',
-            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-          }}>
+          <div key={testimonial.id} className="bg-card rounded-xl p-6 shadow-lg hover:shadow-xl transition-all border border-primary/10">
             {/* Rating */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '1rem'
-            }}>
-              {renderStars(testimonial.rating)}
-              <span style={{
-                marginLeft: '0.5rem',
-                fontSize: '0.875rem',
-                color: '#6B5B4F'
-              }}>
+            <div className="flex items-center mb-4">
+              <div className="flex">
+                {renderStars(testimonial.rating)}
+              </div>
+              <span className="ml-2 text-sm text-text-secondary">
                 {testimonial.rating}/5
               </span>
             </div>
 
             {/* Quote */}
-            <blockquote style={{
-              fontSize: '1rem',
-              color: '#374151',
-              lineHeight: '1.6',
-              marginBottom: '1.5rem',
-              fontStyle: 'italic'
-            }}>
+            <blockquote className="text-foreground leading-relaxed mb-4 italic">
               "{testimonial.text}"
             </blockquote>
 
             {/* Product */}
-            <div style={{
-              backgroundColor: 'rgba(139, 69, 19, 0.1)',
-              padding: '0.75rem',
-              borderRadius: '0.5rem',
-              marginBottom: '1rem'
-            }}>
-              <span style={{
-                fontSize: '0.875rem',
-                color: '#8B4513',
-                fontWeight: '600'
-              }}>
+            <div className="bg-primary/10 p-3 rounded-lg mb-4">
+              <span className="text-sm text-primary font-semibold">
                 Produit acheté: {testimonial.product}
               </span>
             </div>
 
             {/* Author */}
-            <div style={{
-              borderTop: '1px solid #E5E7EB',
-              paddingTop: '1rem'
-            }}>
-              <div style={{
-                fontSize: '1rem',
-                fontWeight: '600',
-                color: '#2C1810',
-                marginBottom: '0.25rem'
-              }}>
+            <div className="border-t border-border pt-4">
+              <div className="font-semibold text-foreground mb-1">
                 {testimonial.name}
               </div>
-              <div style={{
-                fontSize: '0.875rem',
-                color: '#6B5B4F'
-              }}>
+              <div className="text-sm text-text-secondary">
                 {testimonial.location} • {testimonial.date}
               </div>
             </div>
@@ -209,59 +137,21 @@ export default function TestimonialsPage() {
       </div>
 
       {/* Call to Action */}
-      <div style={{
-        maxWidth: '800px',
-        margin: '4rem auto',
-        textAlign: 'center',
-        backgroundColor: '#8B4513',
-        color: 'white',
-        padding: '3rem 2rem',
-        borderRadius: '1rem'
-      }}>
-        <h2 style={{
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          marginBottom: '1rem'
-        }}>
+      <div className="max-w-4xl mx-auto mt-16 text-center bg-primary text-primary-foreground p-12 rounded-xl">
+        <h2 className="text-3xl font-bold mb-4">
           Votre avis compte !
         </h2>
-        <p style={{
-          fontSize: '1.1rem',
-          marginBottom: '2rem',
-          opacity: '0.95'
-        }}>
+        <p className="text-lg mb-8 opacity-95">
           Partagez votre expérience avec nous et aidez d'autres cavaliers à faire le bon choix.
         </p>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          alignItems: 'center'
-        }}>
+        <div className="flex flex-col items-center gap-4">
           <a
             href="/product-catalog"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              padding: '1rem 2rem',
-              backgroundColor: 'white',
-              color: '#8B4513',
-              textDecoration: 'none',
-              borderRadius: '0.5rem',
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
-              transition: 'all 0.2s ease'
-            }}
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-primary rounded-lg font-semibold text-lg hover:bg-white/90 transition-all shadow-lg"
           >
             🛍️ Découvrir nos produits
           </a>
-          <p style={{
-            fontSize: '0.9rem',
-            opacity: '0.8',
-            margin: '0'
-          }}>
+          <p className="text-sm opacity-80">
             Contactez-nous après votre achat pour partager votre expérience
           </p>
         </div>

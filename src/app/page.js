@@ -1,313 +1,110 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+
 export default function Home() {
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f8f6f3',
-      fontFamily: 'Arial, sans-serif'
-    }}>
+    <div className="min-h-screen bg-background">
       {/* Hero Section avec image */}
-      <section style={{
-        position: 'relative',
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden'
-      }}>
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Image de fond */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0
-        }}>
-          <img
+        <div className="absolute inset-0 z-0">
+          <Image
             src="/assets/images/home-hero.jpeg"
             alt="Roberto Equitazione - Showroom de selles"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
+            fill
+            priority
+            className="object-cover"
+            quality={90}
           />
           {/* Overlay pour améliorer la lisibilité */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(to-b, rgba(0,0,0,0.4), rgba(0,0,0,0.3))'
-          }} />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
         </div>
 
         {/* Contenu hero */}
-        <div style={{
-          position: 'relative',
-          zIndex: 10,
-          textAlign: 'center',
-          padding: '0 1rem',
-          maxWidth: '800px',
-          margin: '0 auto'
-        }}>
-          <h1 style={{
-            fontSize: 'clamp(2.5rem, 8vw, 5rem)',
-            fontWeight: 'bold',
-            color: 'white',
-            marginBottom: '1.5rem',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-            fontFamily: 'serif'
-          }}>
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg">
             Roberto Equitazione
           </h1>
-          <p style={{
-            fontSize: 'clamp(1.2rem, 4vw, 2rem)',
-            color: 'rgba(255,255,255,0.95)',
-            marginBottom: '2rem',
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-            fontWeight: 'light'
-          }}>
+          <p className="text-xl md:text-2xl text-white/95 mb-8 drop-shadow-md font-light">
             Excellence équestre depuis des générations
           </p>
-          <p style={{
-            fontSize: 'clamp(1rem, 3vw, 1.5rem)',
-            color: 'rgba(255,255,255,0.9)',
-            marginBottom: '2.5rem',
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-            maxWidth: '600px',
-            marginLeft: 'auto',
-            marginRight: 'auto'
-          }}>
+          <p className="text-lg md:text-xl text-white/90 mb-10 drop-shadow-md max-w-2xl mx-auto">
             Découvrez notre collection exclusive de selles et équipements d'équitation de qualité supérieure
           </p>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-            alignItems: 'center',
-            marginBottom: '3rem'
-          }}>
-            <a
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
               href="/product-catalog"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '1rem 2rem',
-                backgroundColor: '#8B4513',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '0.5rem',
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                transition: 'all 0.2s ease'
-              }}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white rounded-lg font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl"
             >
-              🔍 Explorer le Catalogue
-            </a>
-            <a
+              <span>🔍</span>
+              <span>Explorer le Catalogue</span>
+            </Link>
+            <Link
               href="/temoignages"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '1rem 2rem',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                backdropFilter: 'blur(10px)',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '0.5rem',
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                border: '2px solid rgba(255,255,255,0.4)',
-                transition: 'all 0.2s ease'
-              }}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/20 backdrop-blur-sm text-white border-2 border-white/40 rounded-lg font-semibold text-lg hover:bg-white/30 transition-all"
             >
-              ⭐ Lire les Témoignages
-            </a>
-            <a
+              <span>⭐</span>
+              <span>Lire les Témoignages</span>
+            </Link>
+            <Link
               href="/shopping-cart"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '1rem 2rem',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(10px)',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '0.5rem',
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                border: '2px solid rgba(255,255,255,0.3)',
-                transition: 'all 0.2s ease'
-              }}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-lg font-semibold text-lg hover:bg-white/20 transition-all"
             >
-              🛒 Voir le Panier
-            </a>
+              <span>🛒</span>
+              <span>Voir le Panier</span>
+            </Link>
           </div>
         </div>
 
         {/* Scroll indicator */}
-        <div style={{
-          position: 'absolute',
-          bottom: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-          fontSize: '2rem',
-          color: 'rgba(255,255,255,0.8)',
-          animation: 'bounce 2s infinite'
-        }}>
-          ↓
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 animate-bounce">
+          <span className="text-white/80 text-4xl">↓</span>
         </div>
       </section>
 
       {/* Section Bienvenue */}
-      <section style={{
-        padding: '5rem 1rem',
-        backgroundColor: '#f8f6f3'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto'
-        }}>
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '3rem'
-          }}>
-            <h2 style={{
-              fontSize: 'clamp(2rem, 6vw, 3.5rem)',
-              fontWeight: 'bold',
-              color: '#2C1810',
-              marginBottom: '1rem'
-            }}>
+      <section className="py-20 px-4 bg-surface">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
               Bienvenue chez Roberto Equitazione
             </h2>
-            <div style={{
-              width: '4rem',
-              height: '0.25rem',
-              backgroundColor: '#8B4513',
-              margin: '0 auto 1.5rem'
-            }} />
-            <p style={{
-              fontSize: '1.25rem',
-              color: '#6B5B4F',
-              maxWidth: '800px',
-              margin: '0 auto'
-            }}>
+            <div className="w-24 h-1 bg-primary mx-auto mb-6" />
+            <p className="text-xl text-text-secondary max-w-3xl mx-auto">
               Votre destination pour l'excellence équestre. Nous proposons une sélection soignée
               de selles et équipements d'équitation de la plus haute qualité.
             </p>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '2rem',
-            marginTop: '3rem'
-          }}>
-            <div style={{
-              textAlign: 'center',
-              padding: '2rem',
-              backgroundColor: 'white',
-              borderRadius: '0.5rem',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{
-                width: '4rem',
-                height: '4rem',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(139, 69, 19, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem',
-                fontSize: '2rem'
-              }}>
-                ⭐
+          <div className="grid md:grid-cols-3 gap-8 mt-12">
+            <div className="text-center p-6 bg-card rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">⭐</span>
               </div>
-              <h3 style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: '#2C1810',
-                marginBottom: '0.75rem'
-              }}>
-                Qualité Premium
-              </h3>
-              <p style={{
-                color: '#6B5B4F'
-              }}>
+              <h3 className="text-2xl font-semibold text-foreground mb-3">Qualité Premium</h3>
+              <p className="text-text-secondary">
                 Chaque produit est sélectionné pour sa qualité exceptionnelle et sa durabilité.
               </p>
             </div>
 
-            <div style={{
-              textAlign: 'center',
-              padding: '2rem',
-              backgroundColor: 'white',
-              borderRadius: '0.5rem',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{
-                width: '4rem',
-                height: '4rem',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(139, 69, 19, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem',
-                fontSize: '2rem'
-              }}>
-                🚚
+            <div className="text-center p-6 bg-card rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">🚚</span>
               </div>
-              <h3 style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: '#2C1810',
-                marginBottom: '0.75rem'
-              }}>
-                Livraison Rapide
-              </h3>
-              <p style={{
-                color: '#6B5B4F'
-              }}>
+              <h3 className="text-2xl font-semibold text-foreground mb-3">Livraison Rapide</h3>
+              <p className="text-text-secondary">
                 Expédition rapide et sécurisée pour que vous receviez vos produits en temps voulu.
               </p>
             </div>
 
-            <div style={{
-              textAlign: 'center',
-              padding: '2rem',
-              backgroundColor: 'white',
-              borderRadius: '0.5rem',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{
-                width: '4rem',
-                height: '4rem',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(139, 69, 19, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem',
-                fontSize: '2rem'
-              }}>
-                💝
+            <div className="text-center p-6 bg-card rounded-lg shadow-md hover:shadow-lg transition-all">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">💝</span>
               </div>
-              <h3 style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: '#2C1810',
-                marginBottom: '0.75rem'
-              }}>
-                Passion Équestre
-              </h3>
-              <p style={{
-                color: '#6B5B4F'
-              }}>
+              <h3 className="text-2xl font-semibold text-foreground mb-3">Passion Équestre</h3>
+              <p className="text-text-secondary">
                 Une équipe passionnée qui comprend vos besoins et vous accompagne dans vos choix.
               </p>
             </div>
@@ -316,50 +113,21 @@ export default function Home() {
       </section>
 
       {/* Section CTA */}
-      <section style={{
-        padding: '5rem 1rem',
-        backgroundColor: '#8B4513',
-        color: 'white'
-      }}>
-        <div style={{
-          maxWidth: '800px',
-          margin: '0 auto',
-          textAlign: 'center'
-        }}>
-          <h2 style={{
-            fontSize: 'clamp(2rem, 6vw, 3.5rem)',
-            fontWeight: 'bold',
-            marginBottom: '1.5rem'
-          }}>
+      <section className="py-20 px-4 bg-primary text-primary-foreground">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Prêt à découvrir notre collection ?
           </h2>
-          <p style={{
-            fontSize: '1.25rem',
-            marginBottom: '2rem',
-            opacity: 0.95
-          }}>
+          <p className="text-xl mb-8 opacity-95">
             Parcourez notre catalogue et trouvez l'équipement parfait pour vous et votre cheval.
           </p>
-          <a
+          <Link
             href="/product-catalog"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              padding: '1.25rem 2.5rem',
-              backgroundColor: 'white',
-              color: '#8B4513',
-              textDecoration: 'none',
-              borderRadius: '0.5rem',
-              fontSize: '1.2rem',
-              fontWeight: 'bold',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s ease'
-            }}
+            className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-white text-primary rounded-lg font-semibold text-lg hover:bg-white/90 transition-all shadow-lg hover:shadow-xl"
           >
-            → Commencer les Achats
-          </a>
+            <span>→</span>
+            <span>Commencer les Achats</span>
+          </Link>
         </div>
       </section>
     </div>
