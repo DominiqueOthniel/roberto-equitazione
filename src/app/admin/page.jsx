@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Icon from '@/components/ui/AppIcon';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -28,61 +27,7 @@ export default function AdminDashboard() {
     });
   }, []);
 
-  const statCards = [
-    {
-      title: 'Prodotti',
-      value: stats.totalProducts,
-      icon: 'CubeIcon',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-      href: '/admin/products',
-    },
-    {
-      title: 'Ordini',
-      value: stats.totalOrders,
-      icon: 'ClipboardDocumentListIcon',
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-      href: '/admin/orders',
-    },
-    {
-      title: 'Ricavi',
-      value: `€${stats.totalRevenue.toLocaleString('it-IT')}`,
-      icon: 'BanknotesIcon',
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-      href: '/admin/orders',
-    },
-    {
-      title: 'Clienti',
-      value: stats.totalCustomers,
-      icon: 'UsersIcon',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-      href: '/admin/customers',
-    },
-  ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'order',
-      message: 'Nuovo ordine #ORD-001',
-      time: '5 minuti fa',
-    },
-    {
-      id: 2,
-      type: 'product',
-      message: 'Prodotto "Sella Dressage" modificato',
-      time: '1 ora fa',
-    },
-    {
-      id: 3,
-      type: 'customer',
-      message: 'Nuovo cliente registrato',
-      time: '2 ore fa',
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -97,27 +42,70 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        {statCards.map((stat) => (
-          <Link
-            key={stat.title}
-            href={stat.href}
-            className="bg-card border border-border rounded-lg p-4 lg:p-6 hover:shadow-lg transition-base"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs lg:text-sm text-text-secondary mb-1">{stat.title}</p>
-                <p className="text-xl lg:text-2xl font-heading font-bold text-text-primary">
-                  {stat.value}
-                </p>
-              </div>
-              <div
-                className={`w-10 h-10 lg:w-12 lg:h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}
-              >
-                <Icon name={stat.icon} size={20} className={stat.color} variant="outline" />
-              </div>
+        <Link
+          href="/admin/products"
+          className="bg-card border border-border rounded-lg p-4 lg:p-6 hover:shadow-lg transition-base"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs lg:text-sm text-text-secondary mb-1">Prodotti</p>
+              <p className="text-xl lg:text-2xl font-heading font-bold text-text-primary">
+                {stats.totalProducts}
+              </p>
             </div>
-          </Link>
-        ))}
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              📦
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/orders"
+          className="bg-card border border-border rounded-lg p-4 lg:p-6 hover:shadow-lg transition-base"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs lg:text-sm text-text-secondary mb-1">Ordini</p>
+              <p className="text-xl lg:text-2xl font-heading font-bold text-text-primary">
+                {stats.totalOrders}
+              </p>
+            </div>
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              📋
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/orders"
+          className="bg-card border border-border rounded-lg p-4 lg:p-6 hover:shadow-lg transition-base"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs lg:text-sm text-text-secondary mb-1">Ricavi</p>
+              <p className="text-xl lg:text-2xl font-heading font-bold text-text-primary">
+                €{stats.totalRevenue.toLocaleString('it-IT')}
+              </p>
+            </div>
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              💰
+            </div>
+          </div>
+        </Link>
+
+        <div className="bg-card border border-border rounded-lg p-4 lg:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs lg:text-sm text-text-secondary mb-1">Clienti</p>
+              <p className="text-xl lg:text-2xl font-heading font-bold text-text-primary">
+                {stats.totalCustomers}
+              </p>
+            </div>
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              👥
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Recent Activities */}
