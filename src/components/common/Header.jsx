@@ -14,6 +14,11 @@ export default function Header() {
       href: '/product-catalog',
       icon: 'Squares2X2Icon',
     },
+    {
+      label: 'Témoignages',
+      href: '/temoignages',
+      icon: 'StarIcon',
+    },
   ];
 
   const toggleMobileMenu = () => {

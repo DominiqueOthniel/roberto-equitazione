@@ -104,6 +104,27 @@ export default function Home() {
               🔍 Explorer le Catalogue
             </a>
             <a
+              href="/temoignages"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '1rem 2rem',
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(10px)',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                border: '2px solid rgba(255,255,255,0.4)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              ⭐ Lire les Témoignages
+            </a>
+            <a
               href="/shopping-cart"
               style={{
                 display: 'inline-flex',
