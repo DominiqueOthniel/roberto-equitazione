@@ -67,3 +67,4 @@ Si Supabase ne fonctionne toujours pas, le panier fonctionnera avec localStorage
 
 
 
+

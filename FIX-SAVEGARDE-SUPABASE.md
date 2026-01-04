@@ -70,3 +70,4 @@ Toutes les opérations devraient maintenant être visibles dans Supabase avec de
 
 
 
+

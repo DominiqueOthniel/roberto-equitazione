@@ -21,3 +21,4 @@ SELECT '✅ Colonne password_hash ajoutée à la table customers' AS status;
 
 
 
+

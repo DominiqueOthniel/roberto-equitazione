@@ -23,3 +23,4 @@ SELECT 'RLS désactivé, user_id est TEXT' as status;
 
 
 
+

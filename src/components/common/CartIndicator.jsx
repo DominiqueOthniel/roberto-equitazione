@@ -1,72 +1,36 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
-import { getCartTotalQuantity } from '@/utils/cart-supabase';
 
 export default function CartIndicator() {
   const [cartCount, setCartCount] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const isMountedRef = useRef(false);
 
-  const updateCartCount = async () => {
-    if (typeof window === 'undefined' || !mounted || !isMountedRef.current) return;
-    // Ne pas mettre à jour si une navigation est en cours
-    if (window.__isNavigating) return;
-    
-    try {
-      const totalQuantity = await getCartTotalQuantity();
-      if (window.__isNavigating || !isMountedRef.current) return;
-      setCartCount(totalQuantity);
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du compteur:', error);
-      if (window.__isNavigating || !isMountedRef.current) return;
-      setCartCount(0);
+  useEffect(() => {
+    const storedCart = localStorage.getItem('cart');
+    if (storedCart) {
+      try {
+        const cart = JSON.parse(storedCart);
+        setCartCount(cart?.length || 0);
+      } catch (error) {
+        setCartCount(0);
+      }
     }
-  };
 
-  useEffect(() => {
-    setMounted(true);
-    isMountedRef.current = true;
-    
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || typeof window === 'undefined') return;
-
-    updateCartCount();
-
-    const handleCartUpdate = async () => {
-      // Ne pas réagir si une navigation est en cours
-      if (window.__isNavigating) return;
-      // Utiliser setTimeout pour éviter les mises à jour d'état pendant le démontage
-      setTimeout(async () => {
-        if (window.__isNavigating || !mounted || !isMountedRef.current) return;
-        await updateCartCount();
-        if (window.__isNavigating || !mounted || !isMountedRef.current) return;
-        setIsAnimating(true);
-        setTimeout(() => {
-          if (window.__isNavigating || !mounted || !isMountedRef.current) return;
-          setIsAnimating(false);
-        }, 300);
-      }, 0);
+    const handleCartUpdate = (event) => {
+      setCartCount(event?.detail?.count);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 300);
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
-    
-    // Écouter aussi les changements de localStorage (au cas où d'autres onglets modifient le panier)
-    window.addEventListener('storage', handleCartUpdate);
 
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
-      window.removeEventListener('storage', handleCartUpdate);
     };
-  }, [mounted]);
+  }, []);
 
   return (
     <Link
@@ -80,7 +44,7 @@ export default function CartIndicator() {
         variant="outline"
         className="text-text-primary group-hover:text-primary transition-fast"
       />
-      {mounted && cartCount > 0 && (
+      {cartCount > 0 && (
         <span
           className={`absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-accent text-accent-foreground text-xs font-mono font-medium rounded-full transition-base ${
             isAnimating ? 'scale-125' : 'scale-100'

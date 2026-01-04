@@ -29,55 +29,15 @@ export function createNotification(type, title, message, metadata = {}) {
     
     localStorage.setItem('adminNotifications', JSON.stringify(limited));
     
-    // Déclencher un événement personnalisé pour mettre à jour les composants dans le même onglet
-    // C'est celui-ci qui est le plus important pour la réactivité
-    // Utiliser requestAnimationFrame puis setTimeout pour une meilleure compatibilité mobile
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        // Déclencher l'événement principal
-        window.dispatchEvent(new CustomEvent('newNotification', { 
-          detail: newNotification,
-          bubbles: true,
-          cancelable: true
-        }));
-        
-        // Déclencher aussi un événement spécifique selon le type
-        if (type === 'order') {
-          window.dispatchEvent(new CustomEvent('newOrder', {
-            detail: newNotification,
-            bubbles: true,
-            cancelable: true
-          }));
-        } else if (type === 'message') {
-          window.dispatchEvent(new CustomEvent('newMessage', {
-            detail: newNotification,
-            bubbles: true,
-            cancelable: true
-          }));
-        }
-        
-        // Déclencher aussi un événement de mise à jour générale
-        window.dispatchEvent(new CustomEvent('notificationUpdated', {
-          bubbles: true,
-          cancelable: true
-        }));
-        
-        // Sur mobile, déclencher aussi un événement storage simulé pour forcer la mise à jour
-        // Note: on ne peut pas créer un vrai StorageEvent, mais on peut déclencher un événement personnalisé
-        if (typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-          // Forcer une mise à jour supplémentaire sur mobile
-          window.dispatchEvent(new CustomEvent('storage', {
-            detail: {
-              key: 'adminNotifications',
-              newValue: JSON.stringify(limited),
-              oldValue: stored
-            },
-            bubbles: true,
-            cancelable: true
-          }));
-        }
-      }, 0);
-    });
+    // Déclencher un événement pour mettre à jour les composants
+    window.dispatchEvent(new CustomEvent('newNotification', { detail: newNotification }));
+    
+    // Déclencher aussi un événement spécifique selon le type
+    if (type === 'order') {
+      window.dispatchEvent(new CustomEvent('newOrder'));
+    } else if (type === 'message') {
+      window.dispatchEvent(new CustomEvent('newMessage'));
+    }
     
     return newNotification;
   } catch (error) {

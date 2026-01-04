@@ -134,3 +134,4 @@ Si vous recevez une erreur "Storage quota exceeded" :
 - [Guide d'optimisation d'images](https://web.dev/fast/#optimize-your-images)
 
 
+

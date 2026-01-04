@@ -38,15 +38,16 @@ const nextConfig = {
     // Optimisations de performance pour réduire la latence
     compress: true,
     poweredByHeader: false,
-    async redirects() {
-      return [
-        {
-          source: '/',
-          destination: '/product-catalog',
-          permanent: false,
-        },
-      ];
-    },
+    // Redirection temporairement désactivée pour déboguer
+    // async redirects() {
+    //   return [
+    //     {
+    //       source: '/',
+    //       destination: '/product-catalog',
+    //       permanent: false,
+    //     },
+    //   ];
+    // },
     // Headers pour améliorer le cache et réduire les requêtes
     async headers() {
       return [

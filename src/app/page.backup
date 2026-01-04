@@ -1,0 +1,47 @@
+'use client';
+
+export default function Home() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f8f6f3'
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <h1 style={{
+          fontSize: '3rem',
+          fontWeight: 'bold',
+          color: '#8B4513',
+          marginBottom: '1rem',
+          fontFamily: 'serif'
+        }}>
+          Roberto Equitazione
+        </h1>
+        <p style={{
+          fontSize: '1.5rem',
+          color: '#6B5B4F',
+          marginBottom: '2rem'
+        }}>
+          Bienvenue sur notre site équestre
+        </p>
+        <a
+          href="/product-catalog"
+          style={{
+            padding: '1rem 2rem',
+            backgroundColor: '#8B4513',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '0.5rem',
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            display: 'inline-block'
+          }}
+        >
+          Explorer le Catalogue
+        </a>
+      </div>
+    </div>
+  );
+}
