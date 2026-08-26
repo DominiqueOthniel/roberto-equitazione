@@ -5,6 +5,7 @@ export const BRAND = {
   whatsapp: '+17327559815',
   whatsappDisplay: '+1 732 755 9815',
   whatsappUrl: 'https://wa.me/17327559815',
+  instagramUrl: 'https://www.instagram.com/madison_____equestrian?igsi=MWFybnJweDV5dGMzdQ==',
   country: 'United States',
   logo: '/assets/images/madison-logo.png',
 };

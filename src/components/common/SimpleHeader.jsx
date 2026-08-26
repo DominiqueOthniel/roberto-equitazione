@@ -33,7 +33,7 @@ export default function SimpleHeader() {
               Shop
             </Link>
             <Link href="/su-di-me" className="text-sm lg:text-base text-text-primary font-body hover:text-primary transition-fast" suppressHydrationWarning>
-              About
+              About Me
             </Link>
             <Link href="/testimonianze" className="text-sm lg:text-base text-text-primary font-body hover:text-primary transition-fast" suppressHydrationWarning>
               Reviews
@@ -84,7 +84,7 @@ export default function SimpleHeader() {
                 className="flex items-center gap-3 px-4 py-3 rounded-md text-text-primary font-body transition-fast hover:bg-muted hover:text-primary"
                 suppressHydrationWarning
               >
-                <span>About</span>
+                <span>About Me</span>
               </Link>
               <Link
                 href="/testimonianze"

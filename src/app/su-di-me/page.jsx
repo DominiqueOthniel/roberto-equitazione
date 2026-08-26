@@ -26,7 +26,7 @@ export default function SuDiMePage() {
 
               <div className="flex-1 text-center lg:text-left">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-text-primary mb-4">
-                  About Us
+                  About Me
                 </h1>
                 <p className="text-xl sm:text-2xl text-primary font-heading font-semibold mb-6">
                   {BRAND.name}
