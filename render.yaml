@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: roberto-equitazione
+    env: node
+    plan: free
+    buildCommand: npm install --production=false && npm run build && ls -la .next/static/chunks/ | head -20
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: PORT
+        value: 1000
+    healthCheckPath: /
+    autoDeploy: true
+
