@@ -51,6 +51,20 @@ function sanitizeProductData(productData = {}) {
   return sanitized;
 }
 
+export function formatSupabaseError(error) {
+  if (!error) {
+    return 'Unknown error';
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  return [error.message, error.details, error.hint, error.code]
+    .filter(Boolean)
+    .join(' | ');
+}
+
 /**
  * Get all products
  */
@@ -141,23 +155,32 @@ export async function updateProduct(id, productData) {
   try {
     console.log('Mise à jour produit dans Supabase:', id, productData);
     
+    const payload = {
+      ...sanitizeProductData(productData),
+      updated_at: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from('products')
-      .update({
-        ...sanitizeProductData(productData),
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq('id', id)
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error('Erreur Supabase lors de la mise à jour du produit:', error);
       console.error('Détails:', error.message, error.details, error.hint);
-      throw error;
+      throw new Error(formatSupabaseError(error));
     }
 
-    console.log('Produit mis à jour avec succès:', data);
+    if (!data || data.length === 0) {
+      throw new Error(
+        'No product was updated. Run supabase-fix-products-save.sql in Supabase SQL Editor, then try again.'
+      );
+    }
+
+    const updatedProduct = data[0];
+
+    console.log('Produit mis à jour avec succès:', updatedProduct);
 
     // Mettre à jour le cache
     if (typeof window !== 'undefined') {
@@ -166,7 +189,7 @@ export async function updateProduct(id, productData) {
       window.dispatchEvent(new CustomEvent('productsUpdated'));
     }
 
-    return data;
+    return updatedProduct;
   } catch (error) {
     console.error('Erreur lors de la mise à jour du produit:', error);
     throw error;

@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
-import { getProductById, updateProduct } from '@/utils/products-supabase';
+import { getProductById, updateProduct, formatSupabaseError } from '@/utils/products-supabase';
 import { uploadProductImage } from '@/lib/supabase-storage';
 import { formatPrice } from '@/lib/brand';
 import { getSaddleTypeOptions } from '@/lib/product-types';
@@ -250,7 +250,7 @@ export default function EditProductPage() {
       router.push('/admin/products');
     } catch (error) {
       console.error('❌ Erreur lors de la mise à jour du produit:', error);
-      alert(`Error updating the product: ${error.message || 'Unknown error'}`);
+      alert(`Error updating the product:\n\n${formatSupabaseError(error)}`);
     } finally {
       setIsSubmitting(false);
     }
