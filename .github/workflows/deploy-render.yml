@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -14,10 +15,21 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            {
+              echo "## Render deploy hook skipped"
+              echo ""
+              echo "Add \`RENDER_DEPLOY_HOOK_URL\` in GitHub Actions secrets."
+              echo "Or enable Auto-Deploy in Render if the repo is already connected."
+            } >> "$GITHUB_STEP_SUMMARY"
             echo "RENDER_DEPLOY_HOOK_URL is not set. Skipping deploy hook."
-            echo "Add the secret in GitHub: Settings > Secrets and variables > Actions."
             exit 0
           fi
 
           curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
           echo "Render deploy triggered."
+          echo "## Render deploy triggered" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify Render site is reachable
+        run: |
+          curl -fsS https://roberto-equitazione.onrender.com/ > /dev/null
+          echo "Render site is online."
