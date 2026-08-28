@@ -4,6 +4,53 @@
 
 import { supabase, assertSupabaseConfigured } from '@/lib/supabase';
 
+const PRODUCT_COLUMNS = new Set([
+  'name',
+  'brand',
+  'description',
+  'price',
+  'original_price',
+  'images',
+  'type',
+  'size',
+  'material',
+  'rating',
+  'reviews_count',
+  'stock',
+  'is_new',
+  'is_featured',
+  'disciplina',
+  'paese_origine',
+  'technical_specs',
+  'features',
+  'sizes',
+]);
+
+function sanitizeProductData(productData = {}) {
+  const sanitized = {};
+
+  for (const [key, value] of Object.entries(productData)) {
+    if (!PRODUCT_COLUMNS.has(key)) {
+      continue;
+    }
+
+    if (key === 'images') {
+      if (Array.isArray(value)) {
+        sanitized.images = value.filter(Boolean);
+      } else if (value) {
+        sanitized.images = [value];
+      } else {
+        sanitized.images = [];
+      }
+      continue;
+    }
+
+    sanitized[key] = value;
+  }
+
+  return sanitized;
+}
+
 /**
  * Get all products
  */
@@ -58,7 +105,7 @@ export async function createProduct(productData) {
     
     const { data, error } = await supabase
       .from('products')
-      .insert(productData)
+      .insert(sanitizeProductData(productData))
       .select()
       .single();
 
@@ -97,7 +144,7 @@ export async function updateProduct(id, productData) {
     const { data, error } = await supabase
       .from('products')
       .update({
-        ...productData,
+        ...sanitizeProductData(productData),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

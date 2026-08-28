@@ -238,7 +238,7 @@ export default function EditProductPage() {
       router.push('/admin/products');
     } catch (error) {
       console.error('❌ Erreur lors de la mise à jour du produit:', error);
-      alert('Error updating the product. Please try again.');
+      alert(`Error updating the product: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
