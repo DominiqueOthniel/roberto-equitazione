@@ -4,6 +4,34 @@
 - Compte Render (gratuit) : https://render.com
 - Repository GitHub connecté
 
+## Déploiement automatique (recommandé)
+
+Le repo contient déjà `render.yaml` avec `autoDeployTrigger: commit` sur la branche `main`.
+
+### Option A : Auto-deploy natif Render (le plus simple)
+
+1. Ouvrez https://dashboard.render.com
+2. Ouvrez le service `roberto-equitazione` (ou créez-le via **New +** → **Blueprint**)
+3. Allez dans **Settings** → **Build & Deploy**
+4. Vérifiez que :
+   - **Repository** = `DominiqueOthniel/roberto-equitazione`
+   - **Branch** = `main`
+   - **Auto-Deploy** = **On**
+5. Sauvegardez
+
+Chaque `git push` sur `main` déclenchera alors un build Render.
+
+### Option B : Deploy Hook GitHub Actions (secours)
+
+Si le service Render n'est pas relié à GitHub, utilisez le workflow `.github/workflows/deploy-render.yml`.
+
+1. Render Dashboard → service `roberto-equitazione` → **Settings** → **Deploy Hook**
+2. Copiez l'URL du hook
+3. GitHub → repo → **Settings** → **Secrets and variables** → **Actions**
+4. Créez le secret `RENDER_DEPLOY_HOOK_URL` avec cette URL
+
+À chaque push sur `main`, GitHub Actions appellera ce hook et Render redéploiera.
+
 ## Étapes de déploiement
 
 ### 1. Préparer le repository

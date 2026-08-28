@@ -1,9 +1,11 @@
 services:
   - type: web
     name: roberto-equitazione
-    env: node
+    runtime: node
     plan: free
-    buildCommand: npm install --production=false && npm run build && ls -la .next/static/chunks/ | head -20
+    repo: https://github.com/DominiqueOthniel/roberto-equitazione
+    branch: main
+    buildCommand: npm install --production=false && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -15,5 +17,4 @@ services:
       - key: PORT
         value: 1000
     healthCheckPath: /
-    autoDeploy: true
-
+    autoDeployTrigger: commit
