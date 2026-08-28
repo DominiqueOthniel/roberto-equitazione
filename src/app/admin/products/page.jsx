@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
 import { getProducts, deleteProduct } from '@/utils/products-supabase';
+import { formatPrice } from '@/lib/brand';
 import { useRouter } from 'next/navigation';
 
 export default function AdminProductsPage() {
@@ -31,7 +32,7 @@ export default function AdminProductsPage() {
   };
 
   const handleDelete = async (productId, productName) => {
-    if (!confirm(`Sei sicuro di voler eliminare "${productName}"? Questa azione non può essere annullata.`)) {
+    if (!confirm(`Are you sure you want to delete "${productName}"? This cannot be undone.`)) {
       return;
     }
 
@@ -40,7 +41,7 @@ export default function AdminProductsPage() {
       await loadProducts();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
-      alert('Errore durante l\'eliminazione del prodotto');
+      alert('Error deleting the product');
     }
   };
 
@@ -80,19 +81,15 @@ export default function AdminProductsPage() {
     };
   }, [products]);
 
-  const formatPrice = (price) => {
-    return `€${parseFloat(price || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-heading font-bold text-text-primary mb-2">
-            Prodotti
+            Products
           </h2>
           <p className="text-text-secondary">
-            Gestisci i prodotti del catalogo
+            Manage catalog products
           </p>
         </div>
         <Link
@@ -100,26 +97,26 @@ export default function AdminProductsPage() {
           className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-fast"
         >
           <Icon name="PlusIcon" size={20} variant="outline" />
-          <span>Nuovo prodotto</span>
+          <span>New product</span>
         </Link>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">Totale</p>
+          <p className="text-sm text-text-secondary mb-1">Total</p>
           <p className="text-2xl font-bold text-text-primary">{stats.total}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">In magazzino</p>
+          <p className="text-sm text-text-secondary mb-1">In stock</p>
           <p className="text-2xl font-bold text-green-600">{stats.inStock}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">Esauriti</p>
+          <p className="text-sm text-text-secondary mb-1">Out of stock</p>
           <p className="text-2xl font-bold text-red-600">{stats.outOfStock}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">In evidenza</p>
+          <p className="text-sm text-text-secondary mb-1">Featured</p>
           <p className="text-2xl font-bold text-yellow-600">{stats.featured}</p>
         </div>
       </div>
@@ -137,7 +134,7 @@ export default function AdminProductsPage() {
               />
               <input
                 type="text"
-                placeholder="Cerca prodotti..."
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-11 pr-4 py-2 border border-border rounded-lg bg-background text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -150,7 +147,7 @@ export default function AdminProductsPage() {
               onChange={(e) => setFilterType(e.target.value)}
               className="w-full px-4 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="all">Tutti i tipi</option>
+              <option value="all">All types</option>
               {types
                 .filter((t) => t !== 'all')
                 .map((type) => (
@@ -167,15 +164,15 @@ export default function AdminProductsPage() {
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="mt-4 text-text-secondary">Caricamento...</p>
+          <p className="mt-4 text-text-secondary">Loading...</p>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="bg-card border border-border rounded-lg p-12 text-center">
           <Icon name="CubeIcon" size={48} className="mx-auto text-text-secondary mb-4" variant="outline" />
           <p className="text-text-secondary mb-4">
             {searchQuery || filterType !== 'all'
-              ? 'Nessun prodotto trovato con i filtri selezionati'
-              : 'Nessun prodotto nel catalogo'}
+              ? 'No products match the selected filters'
+              : 'No products in the catalog'}
           </p>
           {!searchQuery && filterType === 'all' && (
             <Link
@@ -183,7 +180,7 @@ export default function AdminProductsPage() {
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-fast"
             >
               <Icon name="PlusIcon" size={20} variant="outline" />
-              <span>Crea il primo prodotto</span>
+              <span>Create the first product</span>
             </Link>
           )}
         </div>
@@ -195,22 +192,22 @@ export default function AdminProductsPage() {
               <thead className="bg-muted border-b border-border">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-text-primary uppercase">
-                    Prodotto
+                    Product
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-text-primary uppercase">
-                    Tipo
+                    Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-text-primary uppercase">
-                    Prezzo
+                    Price
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-text-primary uppercase">
                     Stock
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-text-primary uppercase">
-                    Stato
+                    Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-text-primary uppercase">
-                    Azioni
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -267,12 +264,12 @@ export default function AdminProductsPage() {
                         <div className="flex items-center gap-2">
                           {product.is_featured && (
                             <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                              In evidenza
+                              Featured
                             </span>
                           )}
                           {product.is_new && (
                             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                              Nuovo
+                              New
                             </span>
                           )}
                         </div>
@@ -282,14 +279,14 @@ export default function AdminProductsPage() {
                           <Link
                             href={`/admin/products/${product.id}/edit`}
                             className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-fast"
-                            title="Modifica"
+                            title="Edit"
                           >
                             <Icon name="PencilIcon" size={18} variant="outline" />
                           </Link>
                           <button
                             onClick={() => handleDelete(product.id, product.name)}
                             className="p-2 text-error hover:bg-error/10 rounded-lg transition-fast"
-                            title="Elimina"
+                            title="Delete"
                           >
                             <Icon name="TrashIcon" size={18} variant="outline" />
                           </button>
@@ -342,7 +339,7 @@ export default function AdminProductsPage() {
                           className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-fast text-sm"
                         >
                           <Icon name="PencilIcon" size={16} variant="outline" />
-                          <span>Modifica</span>
+                          <span>Edit</span>
                         </Link>
                         <button
                           onClick={() => handleDelete(product.id, product.name)}

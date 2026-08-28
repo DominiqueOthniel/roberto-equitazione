@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
 import { getOrders, updateOrderStatus } from '@/utils/orders-supabase';
+import { formatPrice } from '@/lib/brand';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -122,15 +123,15 @@ export default function AdminOrdersPage() {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'pending':
-        return 'In attesa';
+        return 'Pending';
       case 'processing':
-        return 'In elaborazione';
+        return 'Processing';
       case 'shipped':
-        return 'Spedito';
+        return 'Shipped';
       case 'delivered':
-        return 'Consegnato';
+        return 'Delivered';
       case 'cancelled':
-        return 'Annullato';
+        return 'Cancelled';
       default:
         return status;
     }
@@ -151,7 +152,7 @@ export default function AdminOrdersPage() {
   const formatDate = (date) => {
     if (!date) return 'N/A';
     const d = date instanceof Date ? date : new Date(date);
-    return d.toLocaleDateString('it-IT', {
+    return d.toLocaleDateString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -166,12 +167,12 @@ export default function AdminOrdersPage() {
     const orderDate = date instanceof Date ? date : new Date(date);
     const diffInMinutes = Math.floor((now - orderDate) / (1000 * 60));
     
-    if (diffInMinutes < 1) return 'Adesso';
-    if (diffInMinutes < 60) return `${diffInMinutes} min fa`;
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
     const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h fa`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} giorni fa`;
+    return `${diffInDays} days ago`;
   };
 
   return (
@@ -182,10 +183,10 @@ export default function AdminOrdersPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-text-primary mb-2">
-                Gestione Ordini
+                Order Management
               </h1>
               <p className="text-sm sm:text-base text-text-secondary">
-                Gestisci tutti gli ordini ({filteredOrders.length} {filteredOrders.length !== 1 ? 'ordini' : 'ordine'})
+                Manage all orders ({filteredOrders.length} {filteredOrders.length !== 1 ? 'orders' : 'order'})
               </p>
             </div>
             <button
@@ -199,14 +200,14 @@ export default function AdminOrdersPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>Sincronizzazione...</span>
+                  <span>Syncing...</span>
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <span>Sincronizza</span>
+                  <span>Sync</span>
                 </>
               )}
             </button>
@@ -214,7 +215,7 @@ export default function AdminOrdersPage() {
 
           {lastSync && (
             <p className="text-xs text-text-secondary">
-              Ultima sincronizzazione: {formatDate(lastSync)}
+              Last sync: {formatDate(lastSync)}
             </p>
           )}
 
@@ -225,29 +226,29 @@ export default function AdminOrdersPage() {
               <p className="text-xl sm:text-2xl font-heading font-bold text-text-primary">{stats.total}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-4">
-              <p className="text-xs sm:text-sm text-text-secondary mb-1">In attesa</p>
+              <p className="text-xs sm:text-sm text-text-secondary mb-1">Pending</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-warning">{stats.pending}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-4">
-              <p className="text-xs sm:text-sm text-text-secondary mb-1">In elaborazione</p>
+              <p className="text-xs sm:text-sm text-text-secondary mb-1">Processing</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-primary">{stats.processing}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-4">
-              <p className="text-xs sm:text-sm text-text-secondary mb-1">Spediti</p>
+              <p className="text-xs sm:text-sm text-text-secondary mb-1">Shipped</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-accent">{stats.shipped}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-4">
-              <p className="text-xs sm:text-sm text-text-secondary mb-1">Consegnati</p>
+              <p className="text-xs sm:text-sm text-text-secondary mb-1">Delivered</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-success">{stats.delivered}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-4">
-              <p className="text-xs sm:text-sm text-text-secondary mb-1">Annullati</p>
+              <p className="text-xs sm:text-sm text-text-secondary mb-1">Cancelled</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-error">{stats.cancelled}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-4">
-              <p className="text-xs sm:text-sm text-text-secondary mb-1">Ricavi</p>
+              <p className="text-xs sm:text-sm text-text-secondary mb-1">Revenue</p>
               <p className="text-xl sm:text-2xl font-heading font-bold text-text-primary">
-                €{stats.totalRevenue.toLocaleString('it-IT')}
+                {formatPrice(stats.totalRevenue)}
               </p>
             </div>
           </div>
@@ -263,7 +264,7 @@ export default function AdminOrdersPage() {
                 </svg>
                 <input
                   type="text"
-                  placeholder="Cerca per ID, cliente o email..."
+                  placeholder="Search by ID, customer, or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 sm:py-3 border border-border rounded-md bg-background text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
@@ -276,12 +277,12 @@ export default function AdminOrdersPage() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-4 py-2 sm:py-3 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
               >
-                <option value="all">Tutti gli stati</option>
-                <option value="pending">In attesa</option>
-                <option value="processing">In elaborazione</option>
-                <option value="shipped">Spedito</option>
-                <option value="delivered">Consegnato</option>
-                <option value="cancelled">Annullato</option>
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
           </div>
@@ -294,25 +295,25 @@ export default function AdminOrdersPage() {
               <thead className="bg-muted border-b border-border">
                 <tr>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-body font-semibold text-text-primary uppercase">
-                    Ordine
+                    Order
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-body font-semibold text-text-primary uppercase">
-                    Cliente
+                    Customer
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-body font-semibold text-text-primary uppercase">
                     Data
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-body font-semibold text-text-primary uppercase">
-                    Articoli
+                    Items
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-body font-semibold text-text-primary uppercase">
-                    Totale
+                    Total
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-body font-semibold text-text-primary uppercase">
-                    Stato
+                    Status
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-right text-xs sm:text-sm font-body font-semibold text-text-primary uppercase">
-                    Azioni
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -320,7 +321,7 @@ export default function AdminOrdersPage() {
                 {filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-12 text-center text-text-secondary">
-                      Nessun ordine trovato
+                      No orders found
                     </td>
                   </tr>
                 ) : (
@@ -344,11 +345,11 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="px-4 sm:px-6 py-4 text-text-secondary text-sm">
-                        {order.items?.length || 0} articol{order.items?.length !== 1 ? 'i' : 'o'}
+                        {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''}
                       </td>
                       <td className="px-4 sm:px-6 py-4">
                         <span className="font-body font-semibold text-text-primary text-sm sm:text-base">
-                          €{(order.total || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                          {formatPrice(order.total)}
                         </span>
                       </td>
                       <td className="px-4 sm:px-6 py-4">
@@ -363,16 +364,16 @@ export default function AdminOrdersPage() {
                             onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
                             className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                           >
-                            <option value="pending">In attesa</option>
-                            <option value="processing">In elaborazione</option>
-                            <option value="shipped">Spedito</option>
-                            <option value="delivered">Consegnato</option>
-                            <option value="cancelled">Annullato</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
                           </select>
                           <button
                             onClick={() => setSelectedOrder(order)}
                             className="p-2 rounded-md hover:bg-muted transition-fast"
-                            aria-label="Vedi dettagli"
+                            aria-label="View details"
                           >
                             <Icon name="EyeIcon" size={18} variant="outline" />
                           </button>
@@ -390,7 +391,7 @@ export default function AdminOrdersPage() {
         <div className="lg:hidden space-y-4">
           {filteredOrders.length === 0 ? (
             <div className="bg-card border border-border rounded-lg p-12 text-center text-text-secondary">
-              Nessun ordine trovato
+              No orders found
             </div>
           ) : (
             filteredOrders.map((order) => (
@@ -417,15 +418,15 @@ export default function AdminOrdersPage() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div>
-                    <p className="text-xs text-text-secondary">Articoli</p>
+                    <p className="text-xs text-text-secondary">Items</p>
                     <p className="font-body font-semibold text-text-primary">
-                      {order.items?.length || 0} articol{order.items?.length !== 1 ? 'i' : 'o'}
+                      {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-text-secondary">Total</p>
                     <p className="font-body font-semibold text-text-primary">
-                      €{(order.total || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                      {formatPrice(order.total)}
                     </p>
                   </div>
                 </div>
@@ -436,18 +437,18 @@ export default function AdminOrdersPage() {
                     onChange={(e) => updateOrderStatus(order.id, e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="pending">In attesa</option>
-                    <option value="processing">In elaborazione</option>
-                    <option value="shipped">Spedito</option>
-                    <option value="delivered">Consegnato</option>
-                    <option value="cancelled">Annullato</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                   <button
                     onClick={() => setSelectedOrder(order)}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-md hover:bg-muted transition-fast"
                   >
                     <Icon name="EyeIcon" size={16} variant="outline" />
-                    <span className="text-sm">Vedi dettagli</span>
+                    <span className="text-sm">View details</span>
                   </button>
                 </div>
               </div>
@@ -466,12 +467,12 @@ export default function AdminOrdersPage() {
               <div className="bg-card border border-border rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-card border-b border-border px-4 sm:px-6 py-4 flex items-center justify-between">
                   <h3 className="text-xl sm:text-2xl font-heading font-bold text-text-primary">
-                    Dettagli dell'Ordine {selectedOrder.id}
+                    Order Details {selectedOrder.id}
                   </h3>
                   <button
                     onClick={() => setSelectedOrder(null)}
                     className="p-2 rounded-md hover:bg-muted transition-fast"
-                    aria-label="Chiudi"
+                    aria-label="Close"
                   >
                     <Icon name="XMarkIcon" size={20} variant="outline" />
                   </button>
@@ -481,17 +482,17 @@ export default function AdminOrdersPage() {
                   {/* Order Info */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="font-body font-semibold text-text-primary mb-3">Informazioni Cliente</h4>
+                      <h4 className="font-body font-semibold text-text-primary mb-3">Customer Information</h4>
                       <div className="space-y-2 text-sm">
-                        <p><span className="text-text-secondary">Nom:</span> {selectedOrder.customer || 'N/A'}</p>
+                        <p><span className="text-text-secondary">Name:</span> {selectedOrder.customer || 'N/A'}</p>
                         <p><span className="text-text-secondary">Email:</span> {selectedOrder.email || 'N/A'}</p>
                         {selectedOrder.phone && (
-                          <p><span className="text-text-secondary">Telefono:</span> {selectedOrder.phone}</p>
+                          <p><span className="text-text-secondary">Phone:</span> {selectedOrder.phone}</p>
                         )}
                       </div>
                     </div>
                     <div>
-                      <h4 className="font-body font-semibold text-text-primary mb-3">Indirizzo di Spedizione</h4>
+                      <h4 className="font-body font-semibold text-text-primary mb-3">Shipping Address</h4>
                       {selectedOrder.shippingAddress ? (
                         <div className="space-y-2 text-sm">
                           <p>{selectedOrder.shippingAddress.via} {selectedOrder.shippingAddress.numeroCivico}</p>
@@ -506,7 +507,7 @@ export default function AdminOrdersPage() {
 
                   {/* Order Items */}
                   <div>
-                    <h4 className="font-body font-semibold text-text-primary mb-3">Articoli</h4>
+                    <h4 className="font-body font-semibold text-text-primary mb-3">Items</h4>
                     <div className="space-y-4">
                       {selectedOrder.items?.map((item, index) => (
                         <div key={index} className="flex gap-4 p-4 border border-border rounded-lg">
@@ -534,16 +535,16 @@ export default function AdminOrdersPage() {
                             </h5>
                             {item.specs && (
                               <div className="text-sm text-text-secondary mb-2">
-                                {item.specs.size && <p>Taglia: {item.specs.size}"</p>}
-                                {item.specs.type && <p>Tipo: {item.specs.type}</p>}
+                                {item.specs.size && <p>Size: {item.specs.size}"</p>}
+                                {item.specs.type && <p>Type: {item.specs.type}</p>}
                               </div>
                             )}
                             <div className="flex items-center justify-between">
                               <p className="text-sm text-text-secondary">
-                                Quantità: {item.quantity || 1}
+                                Quantity: {item.quantity || 1}
                               </p>
                               <p className="font-body font-semibold text-text-primary">
-                                €{((item.price || 0) * (item.quantity || 1)).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                                {formatPrice((item.price || 0) * (item.quantity || 1))}
                               </p>
                             </div>
                           </div>
@@ -554,14 +555,14 @@ export default function AdminOrdersPage() {
 
                   {/* Order Summary */}
                   <div className="border-t border-border pt-4">
-                    <h4 className="font-body font-semibold text-text-primary mb-3">Riepilogo</h4>
+                    <h4 className="font-body font-semibold text-text-primary mb-3">Summary</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between border-t border-border pt-2 font-heading font-bold text-text-primary">
                         <span>Total:</span>
-                        <span>€{(selectedOrder.total || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                        <span>{formatPrice(selectedOrder.total)}</span>
                       </div>
                       <p className="text-xs text-text-secondary mt-2">
-                        Prezzo tutto incluso (spedizione compresa)
+                        All-inclusive price (shipping included)
                       </p>
                     </div>
                   </div>

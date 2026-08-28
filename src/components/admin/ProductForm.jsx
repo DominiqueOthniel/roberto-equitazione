@@ -39,16 +39,16 @@ export default function ProductForm({ product, onSubmit }) {
     const newErrors = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Il nome del prodotto è richiesto';
+      newErrors.name = 'Product name is required';
     }
     if (!formData.brand.trim()) {
-      newErrors.brand = 'Il marchio è richiesto';
+      newErrors.brand = 'Brand is required';
     }
     if (!formData.price || formData.price <= 0) {
-      newErrors.price = 'Il prezzo deve essere superiore a 0';
+      newErrors.price = 'Price must be greater than 0';
     }
     if (!formData.type.trim()) {
-      newErrors.type = 'Il tipo è richiesto';
+      newErrors.type = 'Type is required';
     }
 
     setErrors(newErrors);
@@ -64,15 +64,15 @@ export default function ProductForm({ product, onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-6">
-      {/* Informazioni di base */}
+      {/* Basic Information */}
       <div>
         <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-          Informazioni di base
+          Basic Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              Nome del prodotto *
+              Product name *
             </label>
             <input
               type="text"
@@ -82,7 +82,7 @@ export default function ProductForm({ product, onSubmit }) {
               className={`w-full px-4 py-2 border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring ${
                 errors.name ? 'border-red-500' : 'border-input'
               }`}
-              placeholder="Ex: Sella Dressage Elite"
+              placeholder="e.g. Elite Dressage Saddle"
             />
             {errors.name && (
               <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -91,7 +91,7 @@ export default function ProductForm({ product, onSubmit }) {
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              Marchio *
+              Brand *
             </label>
             <input
               type="text"
@@ -101,7 +101,7 @@ export default function ProductForm({ product, onSubmit }) {
               className={`w-full px-4 py-2 border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring ${
                 errors.brand ? 'border-red-500' : 'border-input'
               }`}
-              placeholder="Ex: PRESTIGE"
+              placeholder="e.g. PRESTIGE"
             />
             {errors.brand && (
               <p className="mt-1 text-sm text-red-600">{errors.brand}</p>
@@ -110,7 +110,7 @@ export default function ProductForm({ product, onSubmit }) {
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              URL dell'immagine
+              Image URL
             </label>
             <input
               type="url"
@@ -134,10 +134,10 @@ export default function ProductForm({ product, onSubmit }) {
                 errors.type ? 'border-red-500' : 'border-input'
               }`}
             >
-              <option value="">Seleziona un tipo</option>
+              <option value="">Select a type</option>
               <option value="Dressage">Dressage</option>
-              <option value="Salto Ostacoli">Salto Ostacoli</option>
-              <option value="Uso Generale">Uso Generale</option>
+              <option value="Show Jumping">Show Jumping</option>
+              <option value="All Purpose">All Purpose</option>
             </select>
             {errors.type && (
               <p className="mt-1 text-sm text-red-600">{errors.type}</p>
@@ -146,15 +146,15 @@ export default function ProductForm({ product, onSubmit }) {
         </div>
       </div>
 
-      {/* Prezzo e stock */}
+      {/* Price and stock */}
       <div>
         <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-          Prezzo e stock
+          Price and stock
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              Prezzo (€) *
+              Price ($) *
             </label>
             <input
               type="number"
@@ -175,7 +175,7 @@ export default function ProductForm({ product, onSubmit }) {
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              Prezzo originale (€)
+              Original price ($)
             </label>
             <input
               type="number"
@@ -206,15 +206,15 @@ export default function ProductForm({ product, onSubmit }) {
         </div>
       </div>
 
-      {/* Caratteristiche */}
+      {/* Specifications */}
       <div>
         <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-          Caratteristiche
+          Specifications
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              Taglia
+              Size
             </label>
             <input
               type="text"
@@ -222,13 +222,13 @@ export default function ProductForm({ product, onSubmit }) {
               value={formData.size}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Ex: 17.5"
+              placeholder="e.g. 17.5"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              Materiale
+              Material
             </label>
             <input
               type="text"
@@ -236,7 +236,7 @@ export default function ProductForm({ product, onSubmit }) {
               value={formData.material}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Ex: Pelle"
+              placeholder="e.g. Leather"
             />
           </div>
         </div>
@@ -254,7 +254,7 @@ export default function ProductForm({ product, onSubmit }) {
               onChange={handleChange}
               className="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring"
             />
-            <span className="text-sm text-text-primary">Segna come nuovo prodotto</span>
+            <span className="text-sm text-text-primary">Mark as a new product</span>
           </label>
         </div>
       </div>
@@ -270,7 +270,7 @@ export default function ProductForm({ product, onSubmit }) {
           onChange={handleChange}
           rows={4}
           className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-          placeholder="Descrizione dettagliata del prodotto..."
+          placeholder="Detailed product description..."
         />
       </div>
 
@@ -280,13 +280,13 @@ export default function ProductForm({ product, onSubmit }) {
           href="/admin/products"
           className="w-full sm:w-auto text-center px-6 py-2 border border-input rounded-md text-text-primary hover:bg-muted transition-fast"
         >
-          Annulla
+          Cancel
         </Link>
         <button
           type="submit"
           className="w-full sm:w-auto px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-accent transition-fast"
         >
-          {product ? 'Aggiorna' : 'Crea il prodotto'}
+          {product ? 'Update' : 'Create product'}
         </button>
       </div>
     </form>

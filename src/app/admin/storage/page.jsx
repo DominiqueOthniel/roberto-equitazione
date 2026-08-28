@@ -52,7 +52,7 @@ export default function AdminStoragePage() {
   };
 
   const handleDeleteFile = async (path) => {
-    if (!confirm(`Sei sicuro di voler eliminare questo file?\n${path}`)) {
+    if (!confirm(`Are you sure you want to delete this file?\n${path}`)) {
       return;
     }
 
@@ -65,7 +65,7 @@ export default function AdminStoragePage() {
       }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
-      alert('Errore durante l\'eliminazione del file');
+      alert('Error deleting the file');
     } finally {
       setDeleting(false);
     }
@@ -74,7 +74,7 @@ export default function AdminStoragePage() {
   const handleDeleteOrphans = async () => {
     if (orphanImages.length === 0) return;
     
-    if (!confirm(`Sei sicuro di voler eliminare ${orphanImages.length} immagini orfane? Questa azione non può essere annullata.`)) {
+    if (!confirm(`Are you sure you want to delete ${orphanImages.length} unused images? This cannot be undone.`)) {
       return;
     }
 
@@ -84,10 +84,10 @@ export default function AdminStoragePage() {
       await deleteMultipleFiles(BUCKET_NAME, paths);
       await loadStorageData();
       await loadOrphanImages();
-      alert(`${orphanImages.length} immagini eliminate con successo`);
+      alert(`${orphanImages.length} images deleted successfully`);
     } catch (error) {
       console.error('Erreur lors de la suppression multiple:', error);
-      alert('Errore durante l\'eliminazione delle immagini');
+      alert('Error deleting the images');
     } finally {
       setDeleting(false);
     }
@@ -115,25 +115,25 @@ export default function AdminStoragePage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-heading font-bold text-text-primary mb-2">
-          Gestione Storage
+          Storage
         </h2>
         <p className="text-text-secondary">
-          Gestisci i file nel bucket "products"
+          Manage files in the "products" bucket
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">File totali</p>
+          <p className="text-sm text-text-secondary mb-1">Total files</p>
           <p className="text-2xl font-bold text-text-primary">{usage.totalFiles}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">Dimensione totale</p>
+          <p className="text-sm text-text-secondary mb-1">Total size</p>
           <p className="text-2xl font-bold text-text-primary">{usage.sizeFormatted}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">Immagini orfane</p>
+          <p className="text-sm text-text-secondary mb-1">Unused images</p>
           <div className="flex items-center justify-between">
             <p className="text-2xl font-bold text-text-primary">
               {showOrphans ? orphanImages.length : '?'}
@@ -143,7 +143,7 @@ export default function AdminStoragePage() {
               className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded hover:opacity-90 transition-fast"
               disabled={loading}
             >
-              {showOrphans ? 'Aggiorna' : 'Cerca'}
+              {showOrphans ? 'Refresh' : 'Search'}
             </button>
           </div>
         </div>
@@ -155,10 +155,10 @@ export default function AdminStoragePage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary">
-                Immagini orfane ({orphanImages.length})
+                Unused images ({orphanImages.length})
               </h3>
               <p className="text-sm text-text-secondary">
-                Immagini non utilizzate in nessun prodotto
+                Images not used by any product
               </p>
             </div>
             <button
@@ -167,7 +167,7 @@ export default function AdminStoragePage() {
               className="px-4 py-2 bg-error text-error-foreground rounded-lg hover:opacity-90 transition-fast disabled:opacity-50 flex items-center gap-2"
             >
               <Icon name="TrashIcon" size={18} variant="outline" />
-              <span>Elimina tutte</span>
+              <span>Delete all</span>
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -185,7 +185,7 @@ export default function AdminStoragePage() {
                     onClick={() => handleDeleteFile(image.path)}
                     disabled={deleting}
                     className="absolute top-2 right-2 p-2 bg-error/90 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Elimina"
+                    title="Delete"
                   >
                     <Icon name="TrashIcon" size={16} variant="outline" />
                   </button>
@@ -204,7 +204,7 @@ export default function AdminStoragePage() {
       <div className="bg-card border border-border rounded-lg p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-heading font-bold text-text-primary">
-            Tutti i file ({files.length})
+            All files ({files.length})
           </h3>
           <button
             onClick={loadStorageData}
@@ -212,19 +212,19 @@ export default function AdminStoragePage() {
             className="px-4 py-2 bg-muted text-text-primary rounded-lg hover:bg-muted/80 transition-fast disabled:opacity-50 flex items-center gap-2"
           >
             <Icon name="ArrowPathIcon" size={18} variant="outline" />
-            <span>Aggiorna</span>
+            <span>Refresh</span>
           </button>
         </div>
 
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <p className="mt-4 text-text-secondary">Caricamento...</p>
+            <p className="mt-4 text-text-secondary">Loading...</p>
           </div>
         ) : files.length === 0 ? (
           <div className="text-center py-12">
             <Icon name="PhotoIcon" size={48} className="mx-auto text-text-secondary mb-4" variant="outline" />
-            <p className="text-text-secondary">Nessun file trovato</p>
+            <p className="text-text-secondary">No files found</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -246,7 +246,7 @@ export default function AdminStoragePage() {
                         onClick={() => handleDeleteFile(file.name)}
                         disabled={deleting}
                         className="absolute top-2 right-2 p-2 bg-error/90 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Elimina"
+                        title="Delete"
                       >
                         <Icon name="TrashIcon" size={16} variant="outline" />
                       </button>
@@ -258,7 +258,7 @@ export default function AdminStoragePage() {
                         onClick={() => handleDeleteFile(file.name)}
                         disabled={deleting}
                         className="absolute top-2 right-2 p-2 bg-error/90 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Elimina"
+                        title="Delete"
                       >
                         <Icon name="TrashIcon" size={16} variant="outline" />
                       </button>
@@ -270,7 +270,7 @@ export default function AdminStoragePage() {
                   <p className="text-xs text-text-secondary">{formatFileSize(fileSize)}</p>
                   {file.created_at && (
                     <p className="text-xs text-text-secondary">
-                      {new Date(file.created_at).toLocaleDateString('it-IT')}
+                      {new Date(file.created_at).toLocaleDateString('en-US')}
                     </p>
                   )}
                 </div>

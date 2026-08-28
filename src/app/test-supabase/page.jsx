@@ -16,7 +16,7 @@ export default function TestSupabasePage() {
     
     try {
       const result = await testSupabaseConnection();
-      setTestResult(result ? '✅ Test réussi' : '❌ Test échoué - Vérifiez la console');
+      setTestResult(result ? '✅ Test succeeded' : '❌ Test failed. Check the console');
     } catch (error) {
       setTestResult('❌ Erreur: ' + error.message);
     } finally {
@@ -58,7 +58,7 @@ export default function TestSupabasePage() {
         alert('Erreur: ' + error.message);
       } else {
         console.log('✅ Données dans user_carts:', data);
-        alert(`Trouvé ${data.length} panier(s) dans Supabase. Vérifiez la console pour les détails.`);
+        alert(`Found ${data.length} cart(s) in Supabase. Check the console for details.`);
       }
     } catch (error) {
       console.error('❌ Erreur:', error);
@@ -71,7 +71,7 @@ export default function TestSupabasePage() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Test Connexion Supabase</h1>
+        <h1 className="text-3xl font-bold mb-8">Supabase Connection Test</h1>
         
         <div className="space-y-4 mb-8">
           <button
@@ -79,7 +79,7 @@ export default function TestSupabasePage() {
             disabled={loading}
             className="bg-primary text-primary-foreground px-6 py-3 rounded-md font-semibold hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? 'Test en cours...' : 'Lancer le test de connexion'}
+            {loading ? 'Testing...' : 'Run connection test'}
           </button>
           
           {testResult && (
@@ -90,14 +90,14 @@ export default function TestSupabasePage() {
         </div>
 
         <div className="space-y-4 mb-8">
-          <h2 className="text-2xl font-bold">Tests spécifiques</h2>
+          <h2 className="text-2xl font-bold">Specific tests</h2>
           
           <button
             onClick={testAddToCart}
             disabled={loading}
             className="bg-blue-600 text-white px-6 py-3 rounded-md font-semibold hover:opacity-90 disabled:opacity-50 block"
           >
-            Test: Ajouter un produit au panier
+            Test: Add a product to the cart
           </button>
           
           <button
@@ -105,23 +105,23 @@ export default function TestSupabasePage() {
             disabled={loading}
             className="bg-green-600 text-white px-6 py-3 rounded-md font-semibold hover:opacity-90 disabled:opacity-50 block"
           >
-            Vérifier les données dans Supabase
+            Check data in Supabase
           </button>
         </div>
 
         <div className="mt-8 p-4 bg-gray-100 rounded-md">
           <h3 className="font-bold mb-2">Instructions:</h3>
           <ol className="list-decimal list-inside space-y-2">
-            <li>Ouvrez la console du navigateur (F12)</li>
-            <li>Cliquez sur "Lancer le test de connexion"</li>
-            <li>Vérifiez les messages dans la console</li>
-            <li>Si vous voyez des erreurs, suivez les instructions affichées</li>
+            <li>Open the browser console (F12)</li>
+            <li>Click "Run connection test"</li>
+            <li>Check the messages in the console</li>
+            <li>If you see errors, follow the on-screen instructions</li>
           </ol>
         </div>
 
         {cart.length > 0 && (
           <div className="mt-8">
-            <h3 className="font-bold mb-2">Panier actuel:</h3>
+            <h3 className="font-bold mb-2">Current cart:</h3>
             <pre className="bg-gray-100 p-4 rounded-md overflow-auto">
               {JSON.stringify(cart, null, 2)}
             </pre>

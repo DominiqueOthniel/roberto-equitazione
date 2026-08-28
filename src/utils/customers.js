@@ -45,13 +45,13 @@ export function registerCustomer(userData) {
       id: existingCustomerIndex >= 0 
         ? customers[existingCustomerIndex].id 
         : (customers.length > 0 ? Math.max(...customers.map(c => c.id || 0)) + 1 : 1),
-      name: userData.name || `${userData.nome || ''} ${userData.cognome || ''}`.trim() || 'Cliente',
+      name: userData.name || `${userData.nome || ''} ${userData.cognome || ''}`.trim() || 'Customer',
       email: userData.email || '',
       phone: userData.phone || userData.telefono || '',
-      memberSince: userData.memberSince || new Date().toLocaleDateString('it-IT'),
+      memberSince: userData.memberSince || new Date().toLocaleDateString('en-US'),
       totalOrders: existingCustomerIndex >= 0 ? (customers[existingCustomerIndex].totalOrders || 0) : 0,
       totalSpent: existingCustomerIndex >= 0 ? (customers[existingCustomerIndex].totalSpent || 0) : 0,
-      status: existingCustomerIndex >= 0 ? (customers[existingCustomerIndex].status || 'Attivo') : 'Attivo',
+      status: existingCustomerIndex >= 0 ? (customers[existingCustomerIndex].status || 'Active') : 'Active',
       lastOrder: existingCustomerIndex >= 0 ? (customers[existingCustomerIndex].lastOrder || null) : null,
       address: formattedAddress,
       isVerified: userData.isVerified || false,
@@ -125,7 +125,7 @@ export function updateCustomerOrderStats(email, orderTotal) {
     if (customerIndex >= 0) {
       customers[customerIndex].totalOrders = (customers[customerIndex].totalOrders || 0) + 1;
       customers[customerIndex].totalSpent = (customers[customerIndex].totalSpent || 0) + orderTotal;
-      customers[customerIndex].lastOrder = new Date().toLocaleDateString('it-IT');
+      customers[customerIndex].lastOrder = new Date().toLocaleDateString('en-US');
       customers[customerIndex].updatedAt = new Date().toISOString();
       
       localStorage.setItem('customers', JSON.stringify(customers));

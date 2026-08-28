@@ -64,7 +64,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
   return (
     <aside className="w-full lg:w-64 bg-card lg:border-r border-border p-4 lg:p-6 h-full overflow-y-auto">
-      {/* Fascia di Prezzo Filter */}
+      {/* Fascia di Price Filter */}
       <div className="mb-6 lg:mb-8">
         <h3 className="font-body font-semibold text-sm lg:text-base text-text-primary mb-3">Price Range</h3>
         <div className="space-y-3">
@@ -84,7 +84,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
         </div>
       </div>
 
-      {/* Tipo di Sella Filter */}
+      {/* Saddle Type Filter */}
       <div className="mb-6 lg:mb-8">
         <h3 className="font-body font-semibold text-sm lg:text-base text-text-primary mb-3">Saddle Type</h3>
         <div className="space-y-2">
@@ -102,7 +102,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
         </div>
       </div>
 
-      {/* Misura Filter */}
+      {/* Seat size Filter */}
       <div className="mb-6 lg:mb-8">
         <h3 className="font-body font-semibold text-sm lg:text-base text-text-primary mb-3">Seat Size</h3>
         <div className="flex flex-wrap gap-2">
@@ -122,7 +122,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
         </div>
       </div>
 
-      {/* Materiale Filter */}
+      {/* Material Filter */}
       <div className="mb-6 lg:mb-8">
         <h3 className="font-body font-semibold text-sm lg:text-base text-text-primary mb-3">Material</h3>
         <div className="space-y-2">

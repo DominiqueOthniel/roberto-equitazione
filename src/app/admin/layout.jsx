@@ -199,7 +199,7 @@ export default function AdminLayout({ children }) {
                 <Icon name={isSidebarOpen ? 'XMarkIcon' : 'Bars3Icon'} size={20} variant="outline" />
               </button>
               <h1 className="text-xl lg:text-2xl font-heading font-bold text-text-primary">
-                Amministrazione
+                Admin
               </h1>
             </div>
             <div className="flex items-center gap-2 lg:gap-4">

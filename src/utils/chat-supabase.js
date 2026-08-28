@@ -155,7 +155,7 @@ export async function getChatMessages() {
       const localWelcome = {
         id: Date.now(),
         sender: 'agent',
-        text: 'Ciao! Come posso aiutarti oggi con la selezione della tua sella?',
+        text: 'Hi! How can I help you choose the right saddle today?',
         timestamp: new Date(),
       };
       saveChatMessageLocalStorage(localWelcome);
@@ -254,7 +254,7 @@ async function createWelcomeMessage() {
   try {
     const welcomeMessage = {
       sender: 'agent',
-      message: 'Ciao! Come posso aiutarti oggi con la selezione della tua sella?',
+      message: 'Hi! How can I help you choose the right saddle today?',
       user_id: typeof userId === 'string' && !userId.includes('@') && userId.startsWith('guest_') ? null : userId,
       user_email: typeof userId === 'string' && userId.includes('@') ? userId : null,
       read: false,
@@ -449,7 +449,7 @@ function getChatMessagesLocalStorage() {
       const welcomeMessage = {
         id: Date.now(),
         sender: 'agent',
-        text: 'Ciao! Come posso aiutarti oggi con la selezione della tua sella?',
+        text: 'Hi! How can I help you choose the right saddle today?',
         timestamp: new Date(),
       };
       saveChatMessageLocalStorage(welcomeMessage);

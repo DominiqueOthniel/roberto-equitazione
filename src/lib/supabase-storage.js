@@ -212,12 +212,12 @@ export async function uploadFile(bucket, path, file, options = {}) {
       });
       
       // Messages d'erreur plus explicites
-      let errorMessage = 'Erreur lors de l\'upload de l\'image.';
+      let errorMessage = 'Error uploading the image.';
       
       if (error.message?.includes('Bucket not found') || error.message?.includes('does not exist')) {
-        errorMessage = `Le bucket "${bucket}" n'existe pas. Veuillez le créer dans Supabase Storage (Dashboard → Storage → New bucket).`;
+        errorMessage = `The bucket "${bucket}" does not exist. Create it in Supabase Storage (Dashboard → Storage → New bucket).`;
       } else if (error.message?.includes('new row violates row-level security') || error.statusCode === 403) {
-        errorMessage = 'Permission refusée. Vérifiez les RLS policies du bucket dans Supabase. Exécutez le script supabase-storage-setup.sql.';
+        errorMessage = 'Permission denied. Check the bucket RLS policies in Supabase. Run the supabase-storage-setup.sql script.';
       } else if (error.message?.includes('The resource already exists') || error.message?.includes('already exists')) {
         // Si le fichier existe déjà, essayer de le remplacer
         console.log('ℹ️ Le fichier existe déjà, tentative de remplacement...');
@@ -229,14 +229,14 @@ export async function uploadFile(bucket, path, file, options = {}) {
         
         if (updateResult.error) {
           console.error('❌ Erreur lors du remplacement:', updateResult.error);
-          errorMessage = `Erreur lors du remplacement du fichier: ${updateResult.error.message}`;
+          errorMessage = `Error replacing the file: ${updateResult.error.message}`;
           throw new Error(errorMessage);
         }
         
         data = updateResult.data;
         error = null; // Réinitialiser l'erreur
       } else {
-        errorMessage = `Erreur: ${error.message || 'Erreur inconnue'}`;
+        errorMessage = `Error: ${error.message || 'Unknown error'}`;
       }
       
       if (error) {
@@ -281,7 +281,7 @@ export async function uploadFile(bucket, path, file, options = {}) {
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error(`Erreur lors de l'upload: ${error.message || 'Erreur inconnue'}`);
+    throw new Error(`Error during upload: ${error.message || 'Unknown error'}`);
   }
 }
 

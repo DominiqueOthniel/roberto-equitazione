@@ -6,6 +6,7 @@ import Icon from '@/components/ui/AppIcon';
 import { getProducts } from '@/utils/products-supabase';
 import { getOrders } from '@/utils/orders-supabase';
 import { getReviewStats } from '@/utils/reviews-supabase';
+import { formatPrice } from '@/lib/brand';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -48,7 +49,7 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
-      title: 'Prodotti',
+      title: 'Products',
       value: loading ? '...' : stats.totalProducts,
       icon: 'CubeIcon',
       color: 'text-blue-600',
@@ -56,7 +57,7 @@ export default function AdminDashboard() {
       href: '/admin/products',
     },
     {
-      title: 'Ordini',
+      title: 'Orders',
       value: loading ? '...' : stats.totalOrders,
       icon: 'ClipboardDocumentListIcon',
       color: 'text-green-600',
@@ -64,15 +65,15 @@ export default function AdminDashboard() {
       href: '/admin/orders',
     },
     {
-      title: 'Ricavi',
-      value: loading ? '...' : `€${stats.totalRevenue.toLocaleString('it-IT')}`,
+      title: 'Revenue',
+      value: loading ? '...' : formatPrice(stats.totalRevenue),
       icon: 'BanknotesIcon',
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
       href: '/admin/orders',
     },
     {
-      title: 'Recensioni in attesa',
+      title: 'Pending reviews',
       value: loading ? '...' : stats.pendingReviews,
       icon: 'StarIcon',
       color: 'text-purple-600',
@@ -85,20 +86,20 @@ export default function AdminDashboard() {
     {
       id: 1,
       type: 'order',
-      message: 'Nuovo ordine #ORD-001',
-      time: '5 minuti fa',
+      message: 'New order #ORD-001',
+      time: '5 minutes ago',
     },
     {
       id: 2,
       type: 'product',
-      message: 'Prodotto "Sella Dressage" modificato',
-      time: '1 ora fa',
+      message: 'Product "Dressage Saddle" updated',
+      time: '1 hour ago',
     },
     {
       id: 3,
       type: 'customer',
-      message: 'Nuovo cliente registrato',
-      time: '2 ore fa',
+      message: 'New customer registered',
+      time: '2 hours ago',
     },
   ];
 
@@ -106,10 +107,10 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-heading font-bold text-text-primary mb-2">
-          Panoramica
+          Overview
         </h2>
         <p className="text-text-secondary">
-          Benvenuto nella dashboard di amministrazione
+          Welcome to the admin dashboard
         </p>
       </div>
 
@@ -141,7 +142,7 @@ export default function AdminDashboard() {
       {/* Recent Activities */}
       <div className="bg-card border border-border rounded-lg p-4 lg:p-6">
         <h3 className="text-base lg:text-lg font-heading font-bold text-text-primary mb-3 lg:mb-4">
-          Attività recenti
+          Recent activity
         </h3>
         <div className="space-y-3 lg:space-y-4">
           {recentActivities.map((activity) => (
@@ -174,7 +175,7 @@ export default function AdminDashboard() {
       {/* Quick Actions */}
       <div className="bg-card border border-border rounded-lg p-4 lg:p-6">
         <h3 className="text-base lg:text-lg font-heading font-bold text-text-primary mb-3 lg:mb-4">
-          Azioni rapide
+          Quick actions
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
           <Link
@@ -182,28 +183,28 @@ export default function AdminDashboard() {
             className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-muted transition-fast"
           >
             <Icon name="PlusIcon" size={20} variant="outline" />
-            <span className="font-body">Aggiungi un prodotto</span>
+            <span className="font-body">Add a product</span>
           </Link>
           <Link
             href="/admin/orders"
             className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-muted transition-fast"
           >
             <Icon name="ClipboardDocumentListIcon" size={20} variant="outline" />
-            <span className="font-body">Vedi gli ordini</span>
+            <span className="font-body">View orders</span>
           </Link>
           <Link
             href="/admin/reviews"
             className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-muted transition-fast"
           >
             <Icon name="StarIcon" size={20} variant="outline" />
-            <span className="font-body">Gestisci recensioni</span>
+            <span className="font-body">Manage reviews</span>
           </Link>
           <Link
             href="/admin/storage"
             className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-muted transition-fast"
           >
             <Icon name="PhotoIcon" size={20} variant="outline" />
-            <span className="font-body">Gestione dello storage</span>
+            <span className="font-body">Storage management</span>
           </Link>
         </div>
       </div>

@@ -55,12 +55,12 @@ export default function AdminReviewsPage() {
       setSelectedReview(null);
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
-      alert('Errore durante l\'aggiornamento dello stato');
+      alert('Error updating the status');
     }
   };
 
   const handleDelete = async (reviewId) => {
-    if (!confirm('Sei sicuro di voler eliminare questa recensione?')) {
+    if (!confirm('Are you sure you want to delete this review?')) {
       return;
     }
 
@@ -70,7 +70,7 @@ export default function AdminReviewsPage() {
       setSelectedReview(null);
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
-      alert('Errore durante l\'eliminazione');
+      alert('Error deleting');
     }
   };
 
@@ -82,7 +82,7 @@ export default function AdminReviewsPage() {
   };
 
   const getProductName = (productId) => {
-    return products[productId]?.name || 'Prodotto sconosciuto';
+    return products[productId]?.name || 'Unknown product';
   };
 
   const getStatusBadgeClass = (status) => {
@@ -101,11 +101,11 @@ export default function AdminReviewsPage() {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'approved':
-        return 'Approvato';
+        return 'Approved';
       case 'rejected':
-        return 'Rifiutato';
+        return 'Rejected';
       case 'pending':
-        return 'In attesa';
+        return 'Pending';
       default:
         return status;
     }
@@ -115,29 +115,29 @@ export default function AdminReviewsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-heading font-bold text-text-primary mb-2">
-          Recensioni
+          Reviews
         </h2>
         <p className="text-text-secondary">
-          Gestisci le recensioni dei prodotti
+          Manage product reviews
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">Totale</p>
+          <p className="text-sm text-text-secondary mb-1">Total</p>
           <p className="text-2xl font-bold text-text-primary">{stats.all}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">In attesa</p>
+          <p className="text-sm text-text-secondary mb-1">Pending</p>
           <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">Approvate</p>
+          <p className="text-sm text-text-secondary mb-1">Approved</p>
           <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-text-secondary mb-1">Rifiutate</p>
+          <p className="text-sm text-text-secondary mb-1">Rejected</p>
           <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function AdminReviewsPage() {
                 : 'bg-muted text-text-primary hover:bg-muted/80'
             }`}
           >
-            Tutte
+            All
           </button>
           <button
             onClick={() => setFilterStatus('pending')}
@@ -163,7 +163,7 @@ export default function AdminReviewsPage() {
                 : 'bg-muted text-text-primary hover:bg-muted/80'
             }`}
           >
-            In attesa ({stats.pending})
+            Pending ({stats.pending})
           </button>
           <button
             onClick={() => setFilterStatus('approved')}
@@ -173,7 +173,7 @@ export default function AdminReviewsPage() {
                 : 'bg-muted text-text-primary hover:bg-muted/80'
             }`}
           >
-            Approvate ({stats.approved})
+            Approved ({stats.approved})
           </button>
           <button
             onClick={() => setFilterStatus('rejected')}
@@ -183,7 +183,7 @@ export default function AdminReviewsPage() {
                 : 'bg-muted text-text-primary hover:bg-muted/80'
             }`}
           >
-            Rifiutate ({stats.rejected})
+            Rejected ({stats.rejected})
           </button>
         </div>
       </div>
@@ -192,12 +192,12 @@ export default function AdminReviewsPage() {
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="mt-4 text-text-secondary">Caricamento...</p>
+          <p className="mt-4 text-text-secondary">Loading...</p>
         </div>
       ) : reviews.length === 0 ? (
         <div className="bg-card border border-border rounded-lg p-12 text-center">
           <Icon name="StarIcon" size={48} className="mx-auto text-text-secondary mb-4" variant="outline" />
-          <p className="text-text-secondary">Nessuna recensione trovata</p>
+          <p className="text-text-secondary">No reviews found</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -211,7 +211,7 @@ export default function AdminReviewsPage() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-heading font-bold text-text-primary mb-1">
-                        {review.user_name || 'Anonimo'}
+                        {review.user_name || 'Anonymous'}
                       </h3>
                       <p className="text-sm text-text-secondary mb-2">
                         {getProductName(review.product_id)}
@@ -246,7 +246,7 @@ export default function AdminReviewsPage() {
                     <span>{review.user_email || 'N/A'}</span>
                     <span>•</span>
                     <span>
-                      {new Date(review.created_at).toLocaleDateString('it-IT', {
+                      {new Date(review.created_at).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -265,14 +265,14 @@ export default function AdminReviewsPage() {
                         className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-fast flex items-center justify-center gap-2"
                       >
                         <Icon name="CheckCircleIcon" size={16} variant="outline" />
-                        Approva
+                        Approve
                       </button>
                       <button
                         onClick={() => handleUpdateStatus(review.id, 'rejected')}
                         className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-fast flex items-center justify-center gap-2"
                       >
                         <Icon name="XMarkIcon" size={16} variant="outline" />
-                        Rifiuta
+                        Reject
                       </button>
                     </>
                   )}
@@ -282,7 +282,7 @@ export default function AdminReviewsPage() {
                       className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-fast flex items-center justify-center gap-2"
                     >
                       <Icon name="XMarkIcon" size={16} variant="outline" />
-                      Rifiuta
+                      Reject
                     </button>
                   )}
                   {review.status === 'rejected' && (
@@ -291,7 +291,7 @@ export default function AdminReviewsPage() {
                       className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-fast flex items-center justify-center gap-2"
                     >
                       <Icon name="CheckCircleIcon" size={16} variant="outline" />
-                      Approva
+                      Approve
                     </button>
                   )}
                   <button
@@ -299,7 +299,7 @@ export default function AdminReviewsPage() {
                     className="w-full px-4 py-2 bg-error text-error-foreground rounded-lg hover:opacity-90 transition-fast flex items-center justify-center gap-2"
                   >
                     <Icon name="TrashIcon" size={16} variant="outline" />
-                    Elimina
+                    Delete
                   </button>
                 </div>
               </div>

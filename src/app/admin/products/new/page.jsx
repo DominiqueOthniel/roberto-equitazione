@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
 import { createProduct } from '@/utils/products-supabase';
 import { uploadProductImage } from '@/lib/supabase-storage';
+import { formatPrice } from '@/lib/brand';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function NewProductPage() {
 
     // Vérifier que c'est une image
     if (!file.type.startsWith('image/')) {
-      alert('Per favore, seleziona un file immagine.');
+      alert('Please select an image file.');
       return;
     }
 
@@ -80,9 +81,9 @@ export default function NewProductPage() {
       }
     } catch (error) {
       console.error('❌ Erreur upload image:', error);
-      const errorMessage = error.message || 'Erreur inconnue lors de l\'upload';
+      const errorMessage = error.message || 'Unknown error during upload';
       console.error('❌ Détails erreur:', error);
-      alert(`Errore durante l'upload dell'immagine:\n\n${errorMessage}\n\nVérifiez la console pour plus de détails.`);
+      alert(`Error uploading the image:\n\n${errorMessage}\n\nCheck the console for more details.`);
     } finally {
       setUploadingImage(false);
     }
@@ -118,19 +119,19 @@ export default function NewProductPage() {
     const newErrors = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Il nome del prodotto è obbligatorio';
+      newErrors.name = 'Product name is required';
     }
     if (!formData.brand.trim()) {
-      newErrors.brand = 'Il brand è obbligatorio';
+      newErrors.brand = 'Brand is required';
     }
     if (!formData.price || formData.price <= 0) {
-      newErrors.price = 'Il prezzo deve essere maggiore di 0';
+      newErrors.price = 'Price must be greater than 0';
     }
     if (!formData.type) {
-      newErrors.type = 'Il tipo è obbligatorio';
+      newErrors.type = 'Type is required';
     }
     if (formData.stock < 0) {
-      newErrors.stock = 'Lo stock non può essere negativo';
+      newErrors.stock = 'Stock cannot be negative';
     }
 
     setErrors(newErrors);
@@ -187,7 +188,7 @@ export default function NewProductPage() {
     } catch (error) {
       console.error('❌ [NewProduct] Erreur lors de la création du produit:', error);
       console.error('❌ [NewProduct] Détails:', error.message, error.stack);
-      alert(`Errore durante la creazione del prodotto: ${error.message || 'Errore sconosciuto'}`);
+      alert(`Error creating the product: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -200,31 +201,31 @@ export default function NewProductPage() {
         <Link
           href="/admin/products"
           className="p-2 rounded-md hover:bg-muted transition-fast"
-          aria-label="Torna alla lista prodotti"
+          aria-label="Back to product list"
         >
           <Icon name="ArrowLeftIcon" size={20} variant="outline" />
         </Link>
         <div>
           <h2 className="text-2xl font-heading font-bold text-text-primary">
-            Nuovo Prodotto
+            New Product
           </h2>
-          <p className="text-text-secondary">Aggiungi un nuovo prodotto al catalogo</p>
+          <p className="text-text-secondary">Add a new product to the catalog</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Formulaire */}
+        {/* Form */}
         <div className="lg:col-span-2">
           <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-6">
-            {/* Informazioni di base */}
+            {/* Basic Information */}
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-                Informazioni di Base
+                Basic Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Nome Prodotto *
+                    Product name *
                   </label>
                   <input
                     type="text"
@@ -234,7 +235,7 @@ export default function NewProductPage() {
                     className={`w-full px-4 py-2 border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring ${
                       errors.name ? 'border-red-500' : 'border-input'
                     }`}
-                    placeholder="Es: Sella Dressage Elite"
+                    placeholder="e.g. Elite Dressage Saddle"
                     required
                   />
                   {errors.name && (
@@ -254,7 +255,7 @@ export default function NewProductPage() {
                     className={`w-full px-4 py-2 border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring ${
                       errors.brand ? 'border-red-500' : 'border-input'
                     }`}
-                    placeholder="Es: PRESTIGE"
+                    placeholder="e.g. PRESTIGE"
                     required
                   />
                   {errors.brand && (
@@ -264,7 +265,7 @@ export default function NewProductPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Tipo di Sella *
+                    Saddle Type *
                   </label>
                   <select
                     name="type"
@@ -275,11 +276,11 @@ export default function NewProductPage() {
                     }`}
                     required
                   >
-                    <option value="">Seleziona un tipo</option>
+                    <option value="">Select a type</option>
                     <option value="Dressage">Dressage</option>
-                    <option value="Salto Ostacoli">Salto Ostacoli</option>
-                    <option value="Uso Generale">Uso Generale</option>
-                    <option value="Completo">Completo</option>
+                    <option value="Show Jumping">Show Jumping</option>
+                    <option value="All Purpose">All Purpose</option>
+                    <option value="Eventing">Eventing</option>
                     <option value="Endurance">Endurance</option>
                   </select>
                   {errors.type && (
@@ -289,15 +290,15 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* Immagini */}
+            {/* Images */}
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-                Immagini
+                Images
               </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Immagine Principale
+                    Main Image
                   </label>
                   <input
                     type="file"
@@ -308,7 +309,7 @@ export default function NewProductPage() {
                     className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-accent disabled:opacity-50"
                   />
                   {uploadingImage && (
-                    <p className="text-sm text-text-secondary mt-2">Upload in corso...</p>
+                    <p className="text-sm text-text-secondary mt-2">Uploading...</p>
                   )}
                 </div>
 
@@ -316,7 +317,7 @@ export default function NewProductPage() {
                   <div className="relative w-32 h-32 border border-border rounded-lg overflow-hidden">
                     <Image
                       src={imagePreview}
-                      alt="Anteprima"
+                      alt="Preview"
                       fill
                       className="object-cover"
                       sizes="128px"
@@ -327,7 +328,7 @@ export default function NewProductPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Immagini Aggiuntive
+                    Additional Images
                   </label>
                   <input
                     type="file"
@@ -344,7 +345,7 @@ export default function NewProductPage() {
                           <div className="relative w-full aspect-square border border-border rounded-lg overflow-hidden">
                             <Image
                               src={img}
-                              alt={`Immagine ${index + 1}`}
+                              alt={`Image ${index + 1}`}
                               fill
                               className="object-cover"
                               sizes="(max-width: 768px) 25vw, 128px"
@@ -365,15 +366,15 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* Prezzo e Stock */}
+            {/* Price and Stock */}
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-                Prezzo e Stock
+                Price and Stock
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Prezzo (€) *
+                    Price ($) *
                   </label>
                   <input
                     type="number"
@@ -395,7 +396,7 @@ export default function NewProductPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Prezzo Originale (€)
+                    Original Price ($)
                   </label>
                   <input
                     type="number"
@@ -432,15 +433,15 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* Caratteristiche */}
+            {/* Specifications */}
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-                Caratteristiche
+                Specifications
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Misura
+                    Seat size
                   </label>
                   <input
                     type="text"
@@ -448,13 +449,13 @@ export default function NewProductPage() {
                     value={formData.size}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Es: 17.5"
+                    placeholder="e.g. 17.5"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Materiale
+                    Material
                   </label>
                   <input
                     type="text"
@@ -462,21 +463,21 @@ export default function NewProductPage() {
                     value={formData.material}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Es: Pelle"
+                    placeholder="e.g. Leather"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Valutazione */}
+            {/* Rating */}
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-                Valutazione
+                Rating
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Valutazione (0-5)
+                    Rating (0-5)
                   </label>
                   <input
                     type="number"
@@ -493,7 +494,7 @@ export default function NewProductPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Numero Recensioni
+                    Number of Reviews
                   </label>
                   <input
                     type="number"
@@ -508,9 +509,9 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* Opzioni */}
+            {/* Options */}
             <div>
-              <h3 className="text-lg font-heading font-bold text-text-primary mb-4">Opzioni</h3>
+              <h3 className="text-lg font-heading font-bold text-text-primary mb-4">Options</h3>
               <div className="space-y-3">
                 <label className="flex items-center gap-2">
                   <input
@@ -520,11 +521,11 @@ export default function NewProductPage() {
                     onChange={handleChange}
                     className="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring"
                   />
-                  <span className="text-sm text-text-primary">Segna come nuovo prodotto</span>
+                  <span className="text-sm text-text-primary">Mark as a new product</span>
                 </label>
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
-                    Stato
+                    Status
                   </label>
                   <select
                     name="status"
@@ -532,18 +533,18 @@ export default function NewProductPage() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <option value="active">Attivo</option>
-                    <option value="inactive">Inattivo</option>
-                    <option value="draft">Bozza</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="draft">Draft</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Descrizione */}
+            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-text-primary mb-2">
-                Descrizione
+                Description
               </label>
               <textarea
                 name="description"
@@ -551,7 +552,7 @@ export default function NewProductPage() {
                 onChange={handleChange}
                 rows={6}
                 className="w-full px-4 py-2 border border-input rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                placeholder="Descrizione dettagliata del prodotto..."
+                placeholder="Detailed product description..."
               />
             </div>
 
@@ -561,14 +562,14 @@ export default function NewProductPage() {
                 href="/admin/products"
                 className="w-full sm:w-auto text-center px-6 py-2 border border-input rounded-md text-text-primary hover:bg-muted transition-fast"
               >
-                Annulla
+                Cancel
               </Link>
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full sm:w-auto px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-accent transition-fast disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Creazione...' : 'Crea Prodotto'}
+                {isSubmitting ? 'Creating...' : 'Create Product'}
               </button>
             </div>
           </form>
@@ -578,14 +579,14 @@ export default function NewProductPage() {
         <div className="lg:col-span-1">
           <div className="bg-card border border-border rounded-lg p-6 sticky top-24">
             <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
-              Anteprima
+              Preview
             </h3>
             <div className="space-y-4">
               {imagePreview ? (
                 <div className="relative aspect-square bg-surface rounded-lg overflow-hidden">
                   <Image
                     src={imagePreview}
-                    alt={formData.name || 'Anteprima prodotto'}
+                    alt={formData.name || 'Product preview'}
                     fill
                     className="object-cover"
                     sizes="(max-width: 1024px) 100vw, 33vw"
@@ -601,15 +602,15 @@ export default function NewProductPage() {
                   {formData.brand || 'BRAND'}
                 </p>
                 <h4 className="font-body font-semibold text-text-primary mb-2">
-                  {formData.name || 'Nome Prodotto'}
+                  {formData.name || 'Product name'}
                 </h4>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-heading font-bold text-text-primary">
-                    €{formData.price ? parseFloat(formData.price).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '0,00'}
+                    {formData.price ? formatPrice(formData.price) : formatPrice(0)}
                   </span>
                   {formData.originalPrice && parseFloat(formData.originalPrice) > parseFloat(formData.price || 0) && (
                     <span className="text-sm text-text-secondary line-through">
-                      €{parseFloat(formData.originalPrice).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                      {formatPrice(formData.originalPrice)}
                     </span>
                   )}
                 </div>
@@ -620,7 +621,7 @@ export default function NewProductPage() {
                 )}
                 {formData.isNew && (
                   <span className="inline-block bg-warning text-warning-foreground px-2 py-1 rounded text-xs font-semibold mb-2">
-                    Nuovo
+                    New
                   </span>
                 )}
               </div>
