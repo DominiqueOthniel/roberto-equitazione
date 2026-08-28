@@ -8,6 +8,7 @@ import Icon from '@/components/ui/AppIcon';
 import { getProductById, updateProduct } from '@/utils/products-supabase';
 import { uploadProductImage } from '@/lib/supabase-storage';
 import { formatPrice } from '@/lib/brand';
+import { getSaddleTypeOptions } from '@/lib/product-types';
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -54,7 +55,17 @@ export default function EditProductPage() {
           setProduct(foundProduct);
           
           // Préparer les données du formulaire
-          const images = foundProduct.images || [];
+          let images = foundProduct.images || [];
+          if (typeof images === 'string') {
+            try {
+              images = JSON.parse(images);
+            } catch {
+              images = [];
+            }
+          }
+          if (!Array.isArray(images)) {
+            images = [];
+          }
           const mainImage = foundProduct.image || (images.length > 0 ? images[0] : '');
           const otherImages = foundProduct.image && images.length > 0 
             ? images.filter(img => img !== foundProduct.image)
@@ -180,13 +191,13 @@ export default function EditProductPage() {
     if (!formData.brand.trim()) {
       newErrors.brand = 'Brand is required';
     }
-    if (!formData.price || formData.price <= 0) {
+    if (!formData.price || Number(formData.price) <= 0) {
       newErrors.price = 'Price must be greater than 0';
     }
     if (!formData.type) {
       newErrors.type = 'Type is required';
     }
-    if (formData.stock < 0) {
+    if (Number(formData.stock) < 0) {
       newErrors.stock = 'Stock cannot be negative';
     }
 
@@ -198,6 +209,7 @@ export default function EditProductPage() {
     e.preventDefault();
     
     if (!validate()) {
+      alert('Please fix the highlighted fields before saving.');
       return;
     }
 
@@ -295,7 +307,7 @@ export default function EditProductPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-6">
+          <form onSubmit={handleSubmit} noValidate className="bg-card border border-border rounded-lg p-6 space-y-6">
             {/* Basic Information */}
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
@@ -315,7 +327,6 @@ export default function EditProductPage() {
                       errors.name ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="e.g. Elite Dressage Saddle"
-                    required
                   />
                   {errors.name && (
                     <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -335,7 +346,6 @@ export default function EditProductPage() {
                       errors.brand ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="e.g. PRESTIGE"
-                    required
                   />
                   {errors.brand && (
                     <p className="mt-1 text-sm text-red-600">{errors.brand}</p>
@@ -353,14 +363,13 @@ export default function EditProductPage() {
                     className={`w-full px-4 py-2 border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring ${
                       errors.type ? 'border-red-500' : 'border-input'
                     }`}
-                    required
                   >
                     <option value="">Select a type</option>
-                    <option value="Dressage">Dressage</option>
-                    <option value="Show Jumping">Show Jumping</option>
-                    <option value="All Purpose">All Purpose</option>
-                    <option value="Eventing">Eventing</option>
-                    <option value="Endurance">Endurance</option>
+                    {getSaddleTypeOptions(formData.type).map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
                   </select>
                   {errors.type && (
                     <p className="mt-1 text-sm text-red-600">{errors.type}</p>
@@ -466,7 +475,6 @@ export default function EditProductPage() {
                       errors.price ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="0.00"
-                    required
                   />
                   {errors.price && (
                     <p className="mt-1 text-sm text-red-600">{errors.price}</p>
@@ -503,7 +511,6 @@ export default function EditProductPage() {
                       errors.stock ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="0"
-                    required
                   />
                   {errors.stock && (
                     <p className="mt-1 text-sm text-red-600">{errors.stock}</p>

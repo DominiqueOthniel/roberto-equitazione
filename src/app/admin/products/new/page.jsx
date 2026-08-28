@@ -8,6 +8,7 @@ import Icon from '@/components/ui/AppIcon';
 import { createProduct } from '@/utils/products-supabase';
 import { uploadProductImage } from '@/lib/supabase-storage';
 import { formatPrice } from '@/lib/brand';
+import { getSaddleTypeOptions } from '@/lib/product-types';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -142,6 +143,7 @@ export default function NewProductPage() {
     e.preventDefault();
     
     if (!validate()) {
+      alert('Please fix the highlighted fields before saving.');
       return;
     }
 
@@ -216,7 +218,7 @@ export default function NewProductPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-6">
+          <form onSubmit={handleSubmit} noValidate className="bg-card border border-border rounded-lg p-6 space-y-6">
             {/* Basic Information */}
             <div>
               <h3 className="text-lg font-heading font-bold text-text-primary mb-4">
@@ -236,7 +238,6 @@ export default function NewProductPage() {
                       errors.name ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="e.g. Elite Dressage Saddle"
-                    required
                   />
                   {errors.name && (
                     <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -256,7 +257,6 @@ export default function NewProductPage() {
                       errors.brand ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="e.g. PRESTIGE"
-                    required
                   />
                   {errors.brand && (
                     <p className="mt-1 text-sm text-red-600">{errors.brand}</p>
@@ -274,14 +274,13 @@ export default function NewProductPage() {
                     className={`w-full px-4 py-2 border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-ring ${
                       errors.type ? 'border-red-500' : 'border-input'
                     }`}
-                    required
                   >
                     <option value="">Select a type</option>
-                    <option value="Dressage">Dressage</option>
-                    <option value="Show Jumping">Show Jumping</option>
-                    <option value="All Purpose">All Purpose</option>
-                    <option value="Eventing">Eventing</option>
-                    <option value="Endurance">Endurance</option>
+                    {getSaddleTypeOptions(formData.type).map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
                   </select>
                   {errors.type && (
                     <p className="mt-1 text-sm text-red-600">{errors.type}</p>
@@ -387,7 +386,6 @@ export default function NewProductPage() {
                       errors.price ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="0.00"
-                    required
                   />
                   {errors.price && (
                     <p className="mt-1 text-sm text-red-600">{errors.price}</p>
@@ -424,7 +422,6 @@ export default function NewProductPage() {
                       errors.stock ? 'border-red-500' : 'border-input'
                     }`}
                     placeholder="0"
-                    required
                   />
                   {errors.stock && (
                     <p className="mt-1 text-sm text-red-600">{errors.stock}</p>
