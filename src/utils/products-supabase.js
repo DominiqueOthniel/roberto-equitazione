@@ -2,7 +2,7 @@
  * Product utility functions with Supabase synchronization
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, assertSupabaseConfigured } from '@/lib/supabase';
 
 /**
  * Get all products
@@ -51,6 +51,8 @@ export async function getProductById(id) {
  * Create a new product
  */
 export async function createProduct(productData) {
+  assertSupabaseConfigured('create products');
+
   try {
     console.log('Création produit dans Supabase:', productData);
     
@@ -79,7 +81,7 @@ export async function createProduct(productData) {
   } catch (error) {
     console.error('Erreur lors de la création du produit:', error);
     console.error('Stack:', error.stack);
-    return createProductLocalStorage(productData);
+    throw error;
   }
 }
 
@@ -87,6 +89,8 @@ export async function createProduct(productData) {
  * Update a product
  */
 export async function updateProduct(id, productData) {
+  assertSupabaseConfigured('update products');
+
   try {
     console.log('Mise à jour produit dans Supabase:', id, productData);
     
@@ -118,7 +122,7 @@ export async function updateProduct(id, productData) {
     return data;
   } catch (error) {
     console.error('Erreur lors de la mise à jour du produit:', error);
-    return updateProductLocalStorage(id, productData);
+    throw error;
   }
 }
 
@@ -126,6 +130,8 @@ export async function updateProduct(id, productData) {
  * Delete a product
  */
 export async function deleteProduct(id) {
+  assertSupabaseConfigured('delete products');
+
   try {
     const { error } = await supabase
       .from('products')
@@ -144,7 +150,7 @@ export async function deleteProduct(id) {
     return true;
   } catch (error) {
     console.error('Erreur lors de la suppression du produit:', error);
-    return deleteProductLocalStorage(id);
+    throw error;
   }
 }
 

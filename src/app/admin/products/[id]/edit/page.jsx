@@ -227,7 +227,6 @@ export default function EditProductPage() {
         reviews_count: parseInt(formData.reviews) || 0,
         is_new: formData.isNew,
         description: formData.description.trim() || null,
-        status: formData.status,
       };
 
       console.log('💾 Mise à jour produit dans Supabase:', productData);

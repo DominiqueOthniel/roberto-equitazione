@@ -2,7 +2,7 @@
  * Order utility functions with Supabase synchronization
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, assertSupabaseConfigured } from '@/lib/supabase';
 
 /**
  * Get user ID from localStorage or Supabase session
@@ -127,6 +127,8 @@ export async function getOrderById(id) {
  * Create a new order
  */
 export async function createOrder(orderData) {
+  assertSupabaseConfigured('create orders');
+
   try {
     const userId = await getUserId();
     
@@ -184,8 +186,7 @@ export async function createOrder(orderData) {
   } catch (error) {
     console.error('Erreur lors de la création de la commande:', error);
     console.error('Stack:', error.stack);
-    // Fallback vers localStorage
-    return createOrderLocalStorage(orderData);
+    throw error;
   }
 }
 
@@ -193,6 +194,8 @@ export async function createOrder(orderData) {
  * Update order status
  */
 export async function updateOrderStatus(id, status) {
+  assertSupabaseConfigured('update orders');
+
   try {
     const { data, error } = await supabase
       .from('orders')
@@ -216,7 +219,7 @@ export async function updateOrderStatus(id, status) {
     return data;
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la commande:', error);
-    return updateOrderStatusLocalStorage(id, status);
+    throw error;
   }
 }
 

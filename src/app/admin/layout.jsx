@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Icon from '@/components/ui/AppIcon';
 import { BRAND } from '@/lib/brand';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -210,6 +211,16 @@ export default function AdminLayout({ children }) {
             </div>
           </div>
         </header>
+
+        {!isSupabaseConfigured && (
+          <div className="mx-4 lg:mx-6 mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+            <p className="font-medium">Database not connected</p>
+            <p className="mt-1 text-sm">
+              Changes will not be saved. Add <code className="text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+              <code className="text-xs">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in your environment, then redeploy.
+            </p>
+          </div>
+        )}
 
         {/* Page Content */}
         <div className="p-4 lg:p-6">{children}</div>

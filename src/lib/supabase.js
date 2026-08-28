@@ -9,6 +9,14 @@ export const isSupabaseConfigured = Boolean(
     supabaseUrl.startsWith('http')
 )
 
+export function assertSupabaseConfigured(action = 'save data') {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      `Cannot ${action}: Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then restart or redeploy.`
+    )
+  }
+}
+
 function createOfflineClient() {
   const response = {
     data: null,
